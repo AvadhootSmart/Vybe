@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import SpotifyWebApi from "spotify-web-api-node-updated";
 import { toast } from "react-toastify";
+import VideoPlayer from "../components/VideoPlayer";
 
 const SpotifyApi = new SpotifyWebApi({
   clientId: import.meta.env.SPOTIFY_CLIENT_ID,
@@ -48,12 +49,12 @@ function Home() {
   const fetchPlaylists = async () => {
     try {
       const response = await fetch(
-        `${import.meta.env.BACKEND_URL}/spotify/playlists`,
+        `${import.meta.env.BACKEND_URL || "http://localhost:5000"}/spotify/playlists`,
         {
           headers: {
             Authorization: `Bearer ${spotifyAccessToken}`,
           },
-        }
+        },
       );
       if (!response.ok) {
         throw new Error("Failed to fetch playlists");
@@ -68,12 +69,12 @@ function Home() {
 
   const getPlaylistItems = async (playlistId) => {
     const response = await fetch(
-      `${import.meta.env.BACKEND_URL}/spotify/playlist/${playlistId}`,
+      `${import.meta.env.BACKEND_URL || "http://localhost:5000"}/spotify/playlist/${playlistId}`,
       {
         headers: {
           Authorization: `Bearer ${spotifyAccessToken}`,
         },
-      }
+      },
     );
 
     const data = await response.json();
@@ -95,7 +96,7 @@ function Home() {
 
   async function getYoutubeVideoId(trackName, artistName) {
     const response = await fetch(
-      `${import.meta.env.BACKEND_URL}/youtube/search`,
+      `${import.meta.env.BACKEND_URL || "http://localhost:5000"}/youtube/search`,
       {
         method: "POST",
         headers: {
@@ -103,7 +104,7 @@ function Home() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ trackName, artistName }),
-      }
+      },
     );
     const data = await response.json();
 
@@ -120,33 +121,15 @@ function Home() {
     playlistTracks.forEach(async (track) => {
       await getYoutubeVideoId(
         track.track.name,
-        track.track.artists[0].name
+        track.track.artists[0].name,
       ).then(() => {
         console.log(youtubeData);
       });
     });
   }
 
-  async function createYtPlaylist(playlistTracks) {
-    const response = await fetch(
-      `${import.meta.env.BACKEND_URL}/youtube/createPlaylist`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${googleToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ytPlaylistName: selectedPlaylist.name,
-        }),
-      }
-    );
-    const data = await response.json();
-    console.log(data);
-  }
-
   return (
-    <div className="bg-zinc-800 w-[100%] h-screen text-white p-4">
+    <div className="bg-zinc-800 w-[100%] min-h-screen text-white p-4">
       <div
         className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center ${
           selectedPlaylist ? "" : "hidden"
@@ -156,12 +139,11 @@ function Home() {
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold">Playlist Tracks</h2>
             <div className="flex items-center gap-2">
-              {/* <button className="bg-zinc-500 text-white p-2 rounded-md" onClick={() => transifyPlaylist(playlistTracks)}>Transify playlist</button> */}
               <button
                 className="bg-zinc-500 text-white p-2 rounded-md"
-                onClick={() => createYtPlaylist(playlistTracks)}
+                onClick={() => transifyPlaylist(playlistTracks)}
               >
-                Create Youtube Playlist
+                Transify playlist
               </button>
               <button
                 onClick={() => setSelectedPlaylist(null)}
@@ -198,7 +180,7 @@ function Home() {
         </div>
       </div>
 
-      <div className="mt-8">
+      <div className="my-8">
         <button
           onClick={fetchPlaylists}
           className="bg-blue-500 text-white px-4 py-2 rounded-md"
@@ -231,6 +213,15 @@ function Home() {
             </div>
           ))}
         </div>
+      </div>
+      <div className="min-h-screen mt-10 flex flex-col gap-10 bg-zinc-800">
+        <h1>Youtube videos</h1>
+        {youtubeData.map((video) => (
+          <div className="w-full bg-zinc-700 flex  gap-2" key={video.id}>
+            <VideoPlayer videoId={video.id} />
+            <h1>{video.name}</h1>
+          </div>
+        ))}
       </div>
     </div>
   );
