@@ -1,4 +1,4 @@
 export type YOUTUBE_DATA = {
-  Y_Name: string;
-  Y_VideoId: string;
+  YT_TITLE: string;
+  YT_VIDEO_ID: string;
 };

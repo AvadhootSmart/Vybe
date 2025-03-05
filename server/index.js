@@ -158,15 +158,25 @@ app.get("/spotify/playlists", async (req, res) => {
         }
 
         const playlists = await response.json();
-        res.json(playlists);
+        const { items } = playlists;
+
+        const formattedPlaylists = items.map((playlist) => ({
+            S_NAME: playlist.name,
+            S_PID: playlist.id,
+            S_IMAGES: playlist.images,
+            S_TRACKS_LINKS: playlist.tracks,
+        }));
+
+        res.json(formattedPlaylists);
     } catch (error) {
         console.error("Error fetching playlists:", error);
         res.status(500).json({ error: "Failed to fetch playlists" });
     }
 });
 
-app.get("/spotify/playlist/:playlistId", async (req, res) => {
-    const playlistId = req.params.playlistId;
+//Gets playlist tracks
+app.get("/spotify/playlist/:PID", async (req, res) => {
+    const playlistId = req.params.PID;
     const accessToken = req.headers.authorization.split(" ")[1];
     const response = await fetch(
         `https://api.spotify.com/v1/playlists/${playlistId}/tracks`,
@@ -177,7 +187,19 @@ app.get("/spotify/playlist/:playlistId", async (req, res) => {
         },
     );
     const data = await response.json();
-    res.json(data);
+    const { items } = data;
+    // res.json(data.items.track);
+
+    const formattedPlaylistTracks = items.map((track) => ({
+        S_TID: track.track.id,
+        S_NAME: track.track.name,
+        S_ARTISTS: track.track.artists,
+        S_ALBUM: track.track.album,
+        S_DURATION_MS: track.track.duration_ms,
+        S_TRACK_NUMBER: track.track.track_number,
+        // YT_DATA: YOUTUBE_DATA;
+    }));
+    res.json(formattedPlaylistTracks);
 });
 
 //Get youtube video id for track
@@ -198,7 +220,14 @@ app.post("/youtube/search", async (req, res) => {
         }
 
         const data = await response.json();
-        res.json(data);
+        const { items } = data;
+
+        const formattedYTResponse = items.map((item) => ({
+            YT_TITLE: item.snippet.title,
+            YT_VIDEO_ID: item.id.videoId,
+        }));
+
+        res.json(formattedYTResponse);
     } catch (error) {
         console.error("Error searching YouTube:", error);
         res.status(500).json({ error: "Failed to search YouTube" });
