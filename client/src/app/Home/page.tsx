@@ -1,9 +1,12 @@
 "use client";
+import { PlaylistCard } from "@/components/playlistCard";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import VideoPlayer from "@/components/VideoPlayer";
+import usePlaylistStore from "@/store/playlistStore";
 import { ARTIST, PLAYLIST, TRACK } from "@/types/playlist";
 import { YOUTUBE_DATA } from "@/types/youtubeData";
-// import { useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 // import { toast } from "react-toastify";
@@ -16,7 +19,7 @@ import { toast } from "sonner";
 // });
 
 function Home() {
-    // const router = useRouter();
+    const router = useRouter();
 
     const [spotifyAccessToken, setSpotifyAccessToken] = useState<string>("");
     const [googleToken, setGoogleToken] = useState<string>("");
@@ -24,9 +27,12 @@ function Home() {
     const [playlistTracks, setPlaylistTracks] = useState<TRACK[]>([]);
     const [playlists, setPlaylists] = useState<PLAYLIST[]>([]);
     const [selectedPlaylist, setSelectedPlaylist] = useState<string>();
+    const [isLoading, setIsLoading] = useState<boolean>(true);
 
-    // const [listMetaData, setListMetaData] = useState({});
     const [youtubeData, setYoutubeData] = useState<YOUTUBE_DATA[]>([]);
+
+    const { storePlaylists, updateTracks, addPlaylistTracks } =
+        usePlaylistStore();
 
     useEffect(() => {
         // Check if document.cookie exists and is not empty
@@ -57,6 +63,7 @@ function Home() {
     }, []);
 
     const fetchPlaylists = async () => {
+        setIsLoading(true);
         try {
             const response = await fetch(
                 `${process.env.BACKEND_URL || "http://localhost:5000"}/spotify/playlists`,
@@ -71,9 +78,12 @@ function Home() {
             }
             const data = await response.json();
             setPlaylists(data);
+            storePlaylists(data);
         } catch (error) {
             console.error("Error fetching playlists:", error);
             toast.error("Failed to fetch playlists");
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -90,6 +100,11 @@ function Home() {
         const data = await response.json();
 
         setPlaylistTracks(data);
+        addPlaylistTracks(data, PID);
+        console.log(
+            "playlistStore-addPlaylistTracks",
+            usePlaylistStore.getState().Playlists,
+        );
         setSelectedPlaylist(PID);
     };
 
@@ -123,23 +138,44 @@ function Home() {
             await getYoutubeVideoId(track.S_NAME, track.S_ARTISTS[0].name).then(
                 () => {
                     toast.success("Playlist Transified");
-                    // router.push("/Player");
+                    // updates YT_DATA for every track in the playlist
+
                     playlistTracks.forEach((track) => {
                         track.YT_DATA = {
                             YT_TITLE: youtubeData[0].YT_TITLE,
                             YT_VIDEO_ID: youtubeData[0].YT_VIDEO_ID,
                         };
                     });
-                    console.log(playlistTracks);
+                    updateTracks(playlistTracks, selectedPlaylist);
+                    router.push(`/Player/${selectedPlaylist}`);
+
+
+                    //sets the playlistTracks with YT_DATA to the playlist
+                    // setPlaylists((prevPlaylists) =>
+                    //     prevPlaylists.map((playlist) =>
+                    //         playlist.S_PID === selectedPlaylist
+                    //             ? { ...playlist, S_TRACKS: playlistTracks }
+                    //             : playlist,
+                    //     ),
+                    // );
                 },
             );
         });
     }
 
+    useEffect(() => {
+        if (!spotifyAccessToken) return;
+        fetchPlaylists();
+    }, [spotifyAccessToken]);
+
+    // useEffect(() => {
+    //   console.log("playlists", playlists);
+    // }, [playlists]);
+
     return (
-        <div className="bg-zinc-800 w-[100%] min-h-screen text-white p-4 font-Poppins">
+        <div className="bg-neutral-950 w-[100%] min-h-screen text-white p-4 font-Poppins">
             <div
-                className={`fixed inset-0 bg-black/70 flex items-center justify-center ${selectedPlaylist ? "" : "hidden"
+                className={`fixed inset-0 bg-black/70 flex items-center justify-center z-50 ${selectedPlaylist ? "" : "hidden"
                     }`}
             >
                 <div className="bg-zinc-900 p-6 rounded-lg w-[80%] max-h-[80vh] overflow-y-auto">
@@ -187,51 +223,45 @@ function Home() {
                 </div>
             </div>
 
-            <div className="my-8">
-                <button
-                    onClick={fetchPlaylists}
-                    className="bg-blue-500 text-white px-4 py-2 rounded-md"
-                >
-                    Fetch Playlists
-                </button>
-                <h2 className="text-xl font-bold mb-4">Your Playlists</h2>
-                <div className="grid lg:grid-cols-4 gap-4">
-                    {playlists.map((playlist) => (
-                        <div
-                            key={playlist.S_PID}
-                            className="bg-zinc-900 size-fit sm:w-full p-4 rounded-lg cursor-pointer hover:scale-105 transition-all duration-100 flex flex-col gap-3"
-                            onClick={() => getPlaylistItemsByPID(playlist.S_PID)}
-                        >
-                            {/* <h3 className="font-semibold">{playlist.id}</h3> */}
-                            {playlist.S_IMAGES[0] && (
-                                <img
-                                    src={playlist.S_IMAGES[0].url}
-                                    alt={playlist.S_NAME}
-                                    className="w-full h-48 object-cover rounded mt-2"
-                                />
-                            )}
-                            <div>
-                                <h1 className="font-semibold text-xl">{playlist.S_NAME}</h1>
-                                <h4 className="text-zinc-400">
-                                    {playlist.S_TRACKS_LINKS.total} tracks
-                                </h4>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+            <div className="mt-8 sm:my-4 px-2">
+                <h2 className="text-3xl font-bold mb-4">Your Playlists</h2>
+                {isLoading ? (
+                    <div className="grid lg:grid-cols-4 gap-4">
+                        <Skeleton className="size-[300px] sm:w-full bg-zinc-800 rounded-2xl" />
+                        <Skeleton className="size-[300px] sm:w-full bg-zinc-800 rounded-2xl" />
+                        <Skeleton className="size-[300px] sm:w-full bg-zinc-800 rounded-2xl" />
+                        <Skeleton className="size-[300px] sm:w-full bg-zinc-800 rounded-2xl" />
+                    </div>
+                ) : (
+                    <div className="grid lg:grid-cols-4 gap-4">
+                        {playlists.map((playlist) => (
+                            <PlaylistCard
+                                key={playlist.S_PID}
+                                playlist={playlist}
+                                getTracks={(PID: string) => getPlaylistItemsByPID(PID)}
+                            />
+                        ))}
+                    </div>
+                )}
             </div>
             {/* https://www.youtube.com/watch?v=M-mT5E7Ol2A&list=PLgznSM5fUa9Moefq9Z7afKyi5FPQRtyM1&index=6 */}
             {youtubeData.length > 0 && (
-                <div className="min-h-screen mt-10 flex flex-col gap-10 bg-zinc-800">
-                    <h1>Youtube videos</h1>
+                <div className="min-h-screen mt-10 flex flex-col gap-10">
+                    <h1>Play Tracks</h1>
                     {playlistTracks?.map((track: TRACK) => (
-                        <div className="w-full bg-zinc-800 flex gap-2 items-center" key={track.S_TID}>
+                        <div className="w-full flex gap-2 items-center" key={track.S_TID}>
                             {/* <VideoPlayer videoId={"M-mT5E7Ol2A"} /> */}
                             <VideoPlayer videoId={track.YT_DATA.YT_VIDEO_ID} />
-                            <img src={track.S_ALBUM.images[0].url} alt={track.S_NAME} className="size-20 object-cover rounded-lg" />
+                            <img
+                                src={track.S_ALBUM.images[0].url}
+                                alt={track.S_NAME}
+                                className="size-20 object-cover rounded-lg"
+                            />
                             <div>
                                 <h1 className="text-xl">{track.S_NAME}</h1>
-                                <h2 className="text-lg text-zinc-400">{track.S_ARTISTS[0].name}</h2>
+                                <h2 className="text-lg text-zinc-400">
+                                    {track.S_ARTISTS[0].name}
+                                </h2>
                             </div>
                         </div>
                     ))}

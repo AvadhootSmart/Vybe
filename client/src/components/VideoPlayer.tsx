@@ -73,7 +73,7 @@ const VideoPlayer = ({ videoId }) => {
             />
             <div className="flex gap-2">
                 {/* <Button onClick={togglePlay}>{playing ? "Pause" : "Play"}</Button> */}
-                <Button onClick={togglePlay} className="cursor-pointer">
+                <Button onClick={togglePlay} className="cursor-pointer" variant={"default"}>
                     {playing ? (
                         <LucidePause className="w-4 h-4" />
                     ) : (
