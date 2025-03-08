@@ -6,6 +6,7 @@ import { PLAYLIST, TRACK } from "@/types/playlist";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { LucideChevronLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const PlaylistPage = () => {
   const { id } = useParams();
@@ -23,16 +24,26 @@ const PlaylistPage = () => {
   }, []);
 
   return (
-    <div className="w-full h-screen bg-neutral-950 text-white py-8 px-4 overflow-hidden">
-      <div className="flex gap-4 mb-4">
+    <div className="w-full h-screen flex flex-col gap-10 items-center bg-neutral-950 text-white py-8 px-4 overflow-hidden relative">
+      <div className="absolute top-10 left-4">
         <Link href={`/Home`}>
           <LucideChevronLeft className="size-10" />
         </Link>
-        <h2 className="text-3xl font-bold mb-4 w-full truncate">
+      </div>
+      <div className="w-full h-[40%] mt-8 flex flex-col gap-4 justify-center items-center">
+        <img
+          src={currentPlaylist?.S_IMAGES[0].url}
+          alt="album-cover"
+          className="w-[200px] object-cover rounded-xl"
+        />
+        <h2 className="text-3xl font-bold  truncate">
           {currentPlaylist?.S_NAME}
         </h2>
+        <Button>Play</Button>
       </div>
-      <div className="flex flex-col gap-4">
+
+      {/* trackList */}
+      <div className="flex flex-col gap-4 w-full">
         {playlistTracks.map((track: TRACK) => (
           <div key={track.S_TID}>
             {/* <h1>Play Tracks</h1> */}
