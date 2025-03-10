@@ -9,9 +9,9 @@
     --font-Poppins: "Poppins", sans-serif;
     --font-Montserrat: "Montserrat", sans-serif;
 
-    --breakpoint-sm: 340px;
-    --breakpoint-md: 768px;
-    --breakpoint-lg: 1024px;
+    /* --breakpoint-sm: 340px; */
+    /* --breakpoint-md: 768px; */
+    /* --breakpoint-lg: 1024px; */
 
     --color-background: var(--background);
     --color-foreground: var(--foreground);
