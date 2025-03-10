@@ -5,12 +5,15 @@ import { Skeleton } from "./ui/skeleton";
 import YouTube from "react-youtube";
 import { LucidePause, LucidePlay, LucideSkipForward } from "lucide-react";
 import { TRACK } from "@/types/playlist";
+// import { AnimatePresence, motion as m } from "motion/react";
 
 interface PlayerProps {
     VideoIds: string[];
     playlistTracks: TRACK[];
     TrackIdx: number;
 }
+//TODO: add states and populate the contents by setting the states
+//instead of directly passing the values
 
 export const Player = ({ VideoIds, playlistTracks, TrackIdx }: PlayerProps) => {
     const [playing, setPlaying] = useState<boolean>(false);

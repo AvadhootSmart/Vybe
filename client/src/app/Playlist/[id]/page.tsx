@@ -46,9 +46,9 @@ const PlaylistPage = () => {
                     VideoIds={trackIds}
                 />
             </div>
-            <div className="fixed top-10 left-10">
+            <div className="fixed top-4 left-4 lg:top-10 lg:left-10">
                 <Link href={`/Home`}>
-                    <LucideChevronLeft className="size-10" />
+                    <LucideChevronLeft className="size-8 sm:size-10" />
                 </Link>
             </div>
             <div className="w-full h-[40%] mt-8 flex flex-col gap-4 justify-center items-center">
@@ -60,11 +60,10 @@ const PlaylistPage = () => {
                 <h2 className="text-3xl font-bold  truncate">
                     {currentPlaylist?.S_NAME}
                 </h2>
-                <Button className="cursor-pointer">Play</Button>
             </div>
 
             {/* trackList */}
-            <div className="flex flex-col gap-4 w-full">
+            <div className="flex flex-col gap-4 w-full mb-20">
                 {playlistTracks.map((track: TRACK) => (
                     <div
                         key={track.S_TID}
