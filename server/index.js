@@ -235,32 +235,32 @@ app.post("/youtube/search", async (req, res) => {
     }
 });
 
-app.post("/youtube/createPlaylist", async (req, res) => {
-    try {
-        const { ytPlaylistName } = req.body;
-        const accessToken = req.headers.authorization.split(" ")[1];
-        const response = await fetch(
-            "https://www.googleapis.com/youtube/v3/playlists",
-            {
-                method: "POST",
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    snippet: {
-                        title: ytPlaylistName,
-                    },
-                }),
-            },
-        );
-        const data = await response.json();
-        res.json(data);
-    } catch (error) {
-        console.error("Error creating YouTube playlist:", error);
-        res.status(500).json({ error: "Failed to create YouTube playlist" });
-    }
-});
+// app.post("/youtube/createPlaylist", async (req, res) => {
+//     try {
+//         const { ytPlaylistName } = req.body;
+//         const accessToken = req.headers.authorization.split(" ")[1];
+//         const response = await fetch(
+//             "https://www.googleapis.com/youtube/v3/playlists",
+//             {
+//                 method: "POST",
+//                 headers: {
+//                     Authorization: `Bearer ${accessToken}`,
+//                     "Content-Type": "application/json",
+//                 },
+//                 body: JSON.stringify({
+//                     snippet: {
+//                         title: ytPlaylistName,
+//                     },
+//                 }),
+//             },
+//         );
+//         const data = await response.json();
+//         res.json(data);
+//     } catch (error) {
+//         console.error("Error creating YouTube playlist:", error);
+//         res.status(500).json({ error: "Failed to create YouTube playlist" });
+//     }
+// });
 
 app.listen(PORT, () => {
     console.log(`Server listening http://localhost:${PORT}`);
