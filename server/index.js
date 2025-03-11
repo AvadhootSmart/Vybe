@@ -11,7 +11,7 @@ const SpotifyWebApi = require("spotify-web-api-node");
 const SpotifyApi = new SpotifyWebApi({
     clientId: process.env.SPOTIFY_CLIENT_ID,
     clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
-    redirectUri: `${process.env.REDIRECT_URI}/auth/spotify/callback`,
+    redirectUri: `${process.env.BACKEND_URL}/auth/spotify/callback`,
 });
 
 dotenv.config();
@@ -48,7 +48,7 @@ passport.use(
         {
             clientID: process.env.GOOGLE_CLIENT_ID,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-            callbackURL: `http://localhost:${PORT}/auth/google/callback`,
+            callbackURL: `${process.env.BACKEND_URL}:${PORT}/auth/google/callback`,
         },
         function(accessToken, refreshToken, profile, done) {
             return done(null, {
@@ -65,7 +65,7 @@ passport.use(
         {
             clientID: process.env.SPOTIFY_CLIENT_ID,
             clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
-            callbackURL: `http://localhost:${PORT}/auth/spotify/callback`,
+            callbackURL: `${process.env.BACKEND_URL}:${PORT}/auth/spotify/callback`,
             // callbackURL: `${process.env.REDIRECT_URI}/auth/spotify/callback`,
         },
         function(accessToken, refreshToken, expires_in, profile, done) {
