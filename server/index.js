@@ -117,6 +117,7 @@ app.get(
             httpOnly: false,
             secure: process.env.NODE_ENV === "production",
             sameSite: "none",
+            domain: ".avadhootsmart.xyz",
         });
         res.redirect(`${process.env.FRONTEND_URL}/Home`);
     },

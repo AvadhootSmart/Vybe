@@ -3,7 +3,6 @@ import { Particles } from "@/components/magicui/particles";
 import { LucideMusic2 } from "lucide-react";
 
 export default function Login() {
-    // href = {`${process.env.BACKEND_URL || "http://localhost:5000"}/auth/spotify`
     return (
         <>
             <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-black/90 text-white relative font-Poppins">
