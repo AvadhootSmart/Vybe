@@ -66,7 +66,6 @@ passport.use(
             clientID: process.env.SPOTIFY_CLIENT_ID,
             clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
             callbackURL: `${process.env.BACKEND_URL}/auth/spotify/callback`,
-            // callbackURL: `${process.env.REDIRECT_URI}/auth/spotify/callback`,
         },
         function (accessToken, refreshToken, expires_in, profile, done) {
             try {
@@ -117,6 +116,7 @@ app.get(
         res.cookie("spotifyAccessToken", req.user.accessToken, {
             httpOnly: false,
             secure: process.env.NODE_ENV === "production",
+            sameSite: "none",
         });
         res.redirect(`${process.env.FRONTEND_URL}/Home`);
     },
