@@ -37,7 +37,7 @@ export const PlaylistCard = ({ playlist, getTracks }: PlaylistCardProps) => {
             src={playlist.S_IMAGES[0].url}
             alt={playlist.S_NAME}
             className={
-              "size-[300px] sm:w-full  cursor-pointer hover:scale-105 transition-all duration-100 object-cover"
+              "w-full cursor-pointer hover:scale-105 transition-all duration-100 object-cover"
             }
           />
         </div>
