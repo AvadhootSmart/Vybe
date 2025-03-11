@@ -49,7 +49,7 @@ function Home() {
                 return;
             }
             const response = await fetch(
-                `${process.env.BACKEND_URL || "http://localhost:5000"}/spotify/playlists`,
+                `${process.env.BACKEND_URL}spotify/playlists`,
                 {
                     headers: {
                         Authorization: `Bearer ${spotifyAccessToken}`,
@@ -85,7 +85,7 @@ function Home() {
             }
 
             const response = await fetch(
-                `${process.env.BACKEND_URL || "http://localhost:5000"}/spotify/playlist/${PID}`,
+                `${process.env.BACKEND_URL}spotify/playlist/${PID}`,
                 {
                     headers: {
                         Authorization: `Bearer ${spotifyAccessToken}`,
@@ -107,7 +107,7 @@ function Home() {
         artistName: string,
     ): Promise<{ YT_TITLE: string; YT_VIDEO_ID: string }> {
         const response = await fetch(
-            `${process.env.BACKEND_URL || "http://localhost:5000"}/youtube/search`,
+            `${process.env.BACKEND_URL}youtube/search`,
             {
                 method: "POST",
                 headers: {
