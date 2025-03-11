@@ -5,8 +5,8 @@ import { PLAYLIST, TRACK } from "@/types/playlist";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { LucideChevronLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Player } from "@/components/Player";
+import { toast } from "sonner";
 
 const PlaylistPage = () => {
     const { id } = useParams();
@@ -24,17 +24,22 @@ const PlaylistPage = () => {
         if (currPlaylist.length > 0) {
             setCurrentPlaylist(currPlaylist[0]);
             setPlaylistTracks(currPlaylist[0].S_TRACKS || []);
-
-            setTrackIds(
-                currPlaylist[0].S_TRACKS.map(
-                    (track: TRACK) => track.YT_DATA.YT_VIDEO_ID,
-                ),
-            );
+            if (
+                currPlaylist[0].S_TRACKS.length > 0 &&
+                currPlaylist[0].S_TRACKS[0].YT_DATA
+            ) {
+                setTrackIds(
+                    currPlaylist[0].S_TRACKS.map(
+                        (track: TRACK) => track.YT_DATA.YT_VIDEO_ID,
+                    ),
+                );
+            } else {
+                setTrackIds([]);
+                toast.error("Something went wrong while transifying playlist");
+            }
         }
 
-        console.log(
-            currPlaylist[0].S_TRACKS.map((track: TRACK) => track.YT_DATA.YT_VIDEO_ID),
-        );
+        // console.log(currPlaylist[0]);
     }, [id, Playlists]);
 
     return (

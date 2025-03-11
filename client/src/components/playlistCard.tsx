@@ -11,7 +11,6 @@ export const PlaylistCard = ({ playlist, getTracks }: PlaylistCardProps) => {
   return (
     <>
       <div className="relative z-0">
-
         {/* gradient layer */}
         <div className="absolute top-0 left-0 bg-gradient-to-t from-black via-black/70 to-transparent size-full overflow-hidden rounded-2xl flex justify-start items-end p-8">
           <div className="w-full flex justify-between items-center">
@@ -40,7 +39,6 @@ export const PlaylistCard = ({ playlist, getTracks }: PlaylistCardProps) => {
             className={
               "size-[300px] sm:w-full  cursor-pointer hover:scale-105 transition-all duration-100 object-cover"
             }
-            // size-128
           />
         </div>
       </div>
