@@ -50,7 +50,7 @@ passport.use(
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
             callbackURL: `${process.env.BACKEND_URL}:${PORT}/auth/google/callback`,
         },
-        function(accessToken, refreshToken, profile, done) {
+        function (accessToken, refreshToken, profile, done) {
             return done(null, {
                 accessToken: accessToken,
                 refreshToken: refreshToken,
@@ -68,7 +68,7 @@ passport.use(
             callbackURL: `${process.env.BACKEND_URL}:${PORT}/auth/spotify/callback`,
             // callbackURL: `${process.env.REDIRECT_URI}/auth/spotify/callback`,
         },
-        function(accessToken, refreshToken, expires_in, profile, done) {
+        function (accessToken, refreshToken, expires_in, profile, done) {
             try {
                 return done(null, {
                     accessToken: accessToken,
@@ -82,12 +82,16 @@ passport.use(
     ),
 );
 
-passport.serializeUser(function(user, done) {
+passport.serializeUser(function (user, done) {
     done(null, user);
 });
 
-passport.deserializeUser(function(obj, done) {
+passport.deserializeUser(function (obj, done) {
     done(null, obj);
+});
+
+app.get("/", (req, res) => {
+    res.send("Backend running succesfully!!");
 });
 
 //SPOTIFY AUTHENTICATION ROUTES:
