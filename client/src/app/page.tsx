@@ -42,7 +42,7 @@ export default function Login() {
                         {/* Login Button */}
                         <BlurFade delay={0.25 * 3} inView>
                             <a
-                                href={`${process.env.NEXT_PUBLIC_BACKEND_URL}auth/spotify`}
+                                href={`${process.env.BACKEND_URL}/auth/spotify`}
                                 className="inline-flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-green-200/25"
                             >
                                 <img
