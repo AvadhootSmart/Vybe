@@ -7,11 +7,11 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const session = require("express-session");
 const SpotifyWebApi = require("spotify-web-api-node");
-const { spawn } = require("child_process");
-const ffmpeg = require("fluent-ffmpeg");
-const path = require("path");
-const fs = require("fs");
-const ytdlpRouter = require("./routes/ytDlp.route");
+// const { spawn } = require("child_process");
+// const ffmpeg = require("fluent-ffmpeg");
+// const path = require("path");
+// const fs = require("fs");
+// const ytdlpRouter = require("./routes/ytDlp.route");
 
 const SpotifyApi = new SpotifyWebApi({
     clientId: process.env.SPOTIFY_CLIENT_ID,
@@ -47,8 +47,6 @@ app.use(
 
 app.use(passport.initialize());
 app.use(passport.session());
-
-app.use("/v1", ytdlpRouter);
 
 passport.use(
     new GoogleStrategy(
