@@ -3,7 +3,12 @@ import React, { useState, useRef, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Skeleton } from "./ui/skeleton";
 import YouTube, { YouTubeEvent, YouTubePlayer } from "react-youtube";
-import { LucidePause, LucidePlay, LucideSkipForward } from "lucide-react";
+import {
+  LucidePause,
+  LucidePictureInPicture2,
+  LucidePlay,
+  LucideSkipForward,
+} from "lucide-react";
 import { TRACK } from "@/types/playlist";
 // import { AnimatePresence, motion as m } from "motion/react";
 
@@ -19,6 +24,7 @@ export const Player = ({ VideoIds, playlistTracks, TrackIdx }: PlayerProps) => {
   const [playing, setPlaying] = useState<boolean>(false);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [playingIdx, setPlayingIdx] = useState<number>(TrackIdx);
+  const [isPip, setIsPip] = useState<boolean>(false);
 
   const playerRef = useRef<YouTubePlayer | null>(null);
 
@@ -62,6 +68,7 @@ export const Player = ({ VideoIds, playlistTracks, TrackIdx }: PlayerProps) => {
   const opts = {
     width: "100%",
     height: "100%",
+
     playerVars: {
       controls: 0,
       modestbranding: 1,
@@ -123,7 +130,7 @@ export const Player = ({ VideoIds, playlistTracks, TrackIdx }: PlayerProps) => {
         className="hidden"
         onStateChange={onStateChange}
       />
-
+      {/* <MiniPlayer playlistTracks={playlistTracks} playingIdx={playingIdx} /> */}
       {/* Track Info */}
       <div className="flex gap-2">
         {playlistTracks.length > 0 ? (
@@ -164,6 +171,9 @@ export const Player = ({ VideoIds, playlistTracks, TrackIdx }: PlayerProps) => {
         </Button>
         <Button onClick={playNext} className="cursor-pointer">
           <LucideSkipForward />
+        </Button>
+        <Button onClick={() => setIsPip(!isPip)} className="cursor-pointer">
+          <LucidePictureInPicture2 />
         </Button>
       </div>
     </div>

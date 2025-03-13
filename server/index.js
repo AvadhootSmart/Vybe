@@ -7,6 +7,11 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const session = require("express-session");
 const SpotifyWebApi = require("spotify-web-api-node");
+const { spawn } = require("child_process");
+const ffmpeg = require("fluent-ffmpeg");
+const path = require("path");
+const fs = require("fs");
+const ytdlpRouter = require("./routes/ytDlp.route");
 
 const SpotifyApi = new SpotifyWebApi({
     clientId: process.env.SPOTIFY_CLIENT_ID,
@@ -43,6 +48,8 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
+app.use("/v1", ytdlpRouter);
+
 passport.use(
     new GoogleStrategy(
         {
@@ -50,7 +57,7 @@ passport.use(
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
             callbackURL: `${process.env.BACKEND_URL}/auth/google/callback`,
         },
-        function (accessToken, refreshToken, profile, done) {
+        function(accessToken, refreshToken, profile, done) {
             return done(null, {
                 accessToken: accessToken,
                 refreshToken: refreshToken,
@@ -67,7 +74,7 @@ passport.use(
             clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
             callbackURL: `${process.env.BACKEND_URL}/auth/spotify/callback`,
         },
-        function (accessToken, refreshToken, expires_in, profile, done) {
+        function(accessToken, refreshToken, expires_in, profile, done) {
             try {
                 return done(null, {
                     accessToken: accessToken,
@@ -81,11 +88,11 @@ passport.use(
     ),
 );
 
-passport.serializeUser(function (user, done) {
+passport.serializeUser(function(user, done) {
     done(null, user);
 });
 
-passport.deserializeUser(function (obj, done) {
+passport.deserializeUser(function(obj, done) {
     done(null, obj);
 });
 
@@ -213,7 +220,7 @@ app.post("/youtube/search", async (req, res) => {
     try {
         const { trackName, artistName } = req.body;
         const response = await fetch(
-            `https://youtube.googleapis.com/youtube/v3/search?part=snippet&maxResults=5&q=${trackName}-${artistName}&key=${process.env.YOUTUBE_API_KEY}`,
+            `https://youtube.googleapis.com/youtube/v3/search?part=snippet&maxResults=2&q=${trackName}-${artistName}&key=${process.env.YOUTUBE_API_KEY}`,
             {
                 headers: {
                     Accept: "application/json",
