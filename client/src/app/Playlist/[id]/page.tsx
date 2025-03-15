@@ -15,25 +15,23 @@ const PlaylistPage = () => {
     const [playlistTracks, setPlaylistTracks] = useState<TRACK[]>([]);
     const [trackIds, setTrackIds] = useState<string[]>([]);
     const [playingIdx, setPlayingIdx] = useState<number>(0);
-    // const [audioTracks, setAudioTracks] = useState<HTMLAudioElement[]>([]);
 
-    // const fetchAudioTracks = async (trackIds: string[]) => {
-    //   const response = await fetch(
-    //     `${process.env.NEXT_PUBLIC_BACKEND_URL}/v1/youtube-audio`,
-    //     {
-    //       method: "POST",
-    //       headers: {
-    //         "Content-Type": "application/json",
-    //       },
-    //       body: JSON.stringify({ videoIds: trackIds }),
-    //     },
-    //   );
+    const fetchAudioTracks = async (trackIds: string[]) => {
+        const response = await fetch(
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/transify`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ videoIds: trackIds }),
+            },
+        );
 
-    //   if (response.ok) {
-    //     const data = await response.json();
-    //     setAudioTracks(data);
-    //   }
-    // };
+        if (response.ok) {
+            toast.success("Playlist Transified with audio files");
+        }
+    };
 
     useEffect(() => {
         const currPlaylist = Playlists.filter((pl) => {
@@ -53,23 +51,25 @@ const PlaylistPage = () => {
                     ),
                 );
 
-                // console.log(
-                //   currPlaylist[0].S_TRACKS.map(
-                //     (track: TRACK) => track.YT_DATA.YT_VIDEO_ID,
-                //   ),
-                // );
+                console.log(
+                    currPlaylist[0].S_TRACKS.map(
+                        (track: TRACK) => track.YT_DATA.YT_VIDEO_ID,
+                    ),
+                );
             } else {
                 setTrackIds([]);
                 toast.error("Something went wrong while transifying playlist");
             }
         }
 
-        // if (trackIds.length > 0) {
-        //   fetchAudioTracks(trackIds);
-        // }
-
-        // console.log(currPlaylist[0]);
+        console.log(currPlaylist[0]);
     }, [id, Playlists]);
+
+    useEffect(() => {
+        if (trackIds.length > 0) {
+            fetchAudioTracks(trackIds);
+        }
+    }, [trackIds]);
 
     return (
         <div className="w-full min-h-screen flex flex-col gap-10 items-center font-Poppins bg-neutral-950 text-white py-8 px-2 lg:px-[20%] overflow-hidden relative">
