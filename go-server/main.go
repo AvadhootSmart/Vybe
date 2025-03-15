@@ -13,6 +13,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
+//Super crappy code, I know, cleaning chores will be done on initial release
 func main() {
 
 	err := godotenv.Load()
