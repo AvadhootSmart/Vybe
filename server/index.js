@@ -116,8 +116,8 @@ app.get(
     res.cookie("spotifyAccessToken", req.user.accessToken, {
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",
-      // sameSite: "none",
-      // domain: ".avadhootsmart.xyz",
+      sameSite: "none",
+      domain: ".avadhootsmart.xyz",
     });
     res.redirect(`${process.env.FRONTEND_URL}/Home`);
   },
