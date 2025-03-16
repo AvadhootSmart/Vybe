@@ -5,7 +5,7 @@ import { PLAYLIST, TRACK } from "@/types/playlist";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { LucideChevronLeft } from "lucide-react";
-import { Player } from "@/components/Player";
+// import { Player } from "@/components/Player";
 import { toast } from "sonner";
 import AudioPlayer from "@/components/audioPlayer";
 
