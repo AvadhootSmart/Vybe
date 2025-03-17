@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { TRACK } from "@/types/playlist";
 import { toast } from "sonner";
-import Error from "next/error";
 
 interface AudioPlayerProps {
   VideoIds: string[];
@@ -27,7 +26,6 @@ const AudioPlayer = ({
   const [playing, setPlaying] = useState<boolean>(false);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [playingIdx, setPlayingIdx] = useState<number>(TrackIdx);
-  const [error, setError] = useState<string>("");
   const [progress, setProgress] = useState<number>(0);
   const [volume, setVolume] = useState<number>(0.75); // Default volume 50%
 
@@ -35,7 +33,6 @@ const AudioPlayer = ({
 
   useEffect(() => {
     setIsLoaded(false);
-    setError("");
 
     if (audioRef.current) {
       audioRef.current.pause();
@@ -48,11 +45,10 @@ const AudioPlayer = ({
 
     const audioUrl = `http://localhost:8001/stream/${videoId}`;
     try {
-      setError("");
-
       const response = await fetch(audioUrl, { method: "HEAD" });
       if (!response.ok) {
-        throw new Error(`Failed to load audio: ${response.statusText}`);
+        // throw new Error(`Failed to load audio: ${response.statusText}`);
+        toast.error("Failed to load & play audio");
       }
 
       if (audioRef.current) {
@@ -60,9 +56,9 @@ const AudioPlayer = ({
         audioRef.current.load();
         setIsLoaded(true);
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (error) {
       setIsLoaded(false);
+      console.log(error);
     }
   };
 
@@ -121,6 +117,14 @@ const AudioPlayer = ({
     setVolume(newVolume);
   };
 
+  const toggleMute = () => {
+    if (audioRef.current) {
+      audioRef.current.muted = !audioRef.current.muted;
+      setVolume(audioRef.current.muted ? 0 : audioRef.current.volume);
+    }
+  };
+
+  //Updates the corresponding values on render
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = volume;
@@ -191,7 +195,7 @@ const AudioPlayer = ({
   return (
     <div className="p-2 bg-white/10 backdrop-blur-lg sm:backdrop-blur-3xl w-full flex font-Poppins rounded-xl justify-between items-center relative">
       {/* Hidden Audio Element */}
-      <audio ref={audioRef} onEnded={playNext} autoPlay />
+      <audio ref={audioRef} onEnded={playNext} autoPlay onError={playNext} />
 
       {/* Track Info */}
       <div className="flex gap-2">
@@ -250,12 +254,7 @@ const AudioPlayer = ({
 
       {/* Volume Control */}
       <div className="items-center gap-2 hidden md:flex">
-        <Button
-          onClick={() => {
-            setVolume(volume > 0 ? 0 : 0.5);
-            handleVolumeChange({ target: { value: volume > 0 ? 0 : 0.5 } });
-          }}
-        >
+        <Button onClick={toggleMute}>
           {volume > 0 ? (
             <LucideVolume2 className="w-4 h-4" />
           ) : (
