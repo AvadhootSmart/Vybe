@@ -215,7 +215,7 @@ func main() {
 	})
 	app.Post("/transify", func(c *fiber.Ctx) error {
 		type Request struct {
-			VideoIDs []string `json:"videoIDs"`
+			VideoIDs []string `json:"videoIds"`
 		}
 
 		req := new(Request)
@@ -227,8 +227,19 @@ func main() {
 		ctx := context.Background()
 
 		for _, videoId := range req.VideoIDs {
-			videoURL := fmt.Sprintf("https://www.youtube.com/watch?v=%s", videoId)
+			cacheKey := "audio:" + videoId
 
+			// Check if audio already exists in cache
+			cachedAudio, err := redisClient.Get(ctx, cacheKey).Bytes()
+			if err == nil && len(cachedAudio) > 0 {
+				log.Printf("Cache hit: %s (size: %d MBs)\n", videoId, len(cachedAudio)/(1024*1024))
+				continue // Skip downloading since it's already cached
+			} else {
+				log.Printf("Cache miss: %s. Downloading...\n", videoId)
+			}
+
+			// Download audio using yt-dlp
+			videoURL := fmt.Sprintf("https://www.youtube.com/watch?v=%s", videoId)
 			cmd := exec.Command("yt-dlp", "-f", "bestaudio", "--extract-audio", "--audio-format", "mp3", "-o", "-", videoURL)
 
 			var out bytes.Buffer
@@ -240,19 +251,19 @@ func main() {
 			}
 
 			audioBytes := out.Bytes()
-			log.Printf("Downloaded audio for %s: %v\n", videoId, len(audioBytes))
+			log.Printf("Downloaded audio for %s: %d bytes\n", videoId, len(audioBytes))
 
-			err := redisClient.Set(ctx, "audio:"+videoId, audioBytes, 6*time.Hour).Err()
+			// Store audio in Redis
+			err = redisClient.Set(ctx, cacheKey, audioBytes, 6*time.Hour).Err()
 			if err != nil {
 				log.Println("Error caching audio:", err)
 				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to cache audio"})
-
 			}
+
 			log.Println("Cached:", videoURL)
 		}
 
 		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Playlist cached successfully"})
-
 	})
 
 	//Streaming from redis cache

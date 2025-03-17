@@ -1,15 +1,11 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
-import { Button } from "./ui/button";
 import { Skeleton } from "./ui/skeleton";
 import YouTube, { YouTubeEvent, YouTubePlayer } from "react-youtube";
-import {
-  LucidePause,
-  LucidePictureInPicture2,
-  LucidePlay,
-  LucideSkipForward,
-} from "lucide-react";
+import { LucidePause, LucidePlay, LucideSkipForward } from "lucide-react";
 import { TRACK } from "@/types/playlist";
+// import AudioPlayer from "./audioPlayer";
+import { Button } from "./ui/button";
 // import { AnimatePresence, motion as m } from "motion/react";
 
 interface PlayerProps {
@@ -17,14 +13,11 @@ interface PlayerProps {
   playlistTracks: TRACK[];
   TrackIdx: number;
 }
-//TODO: add states and populate the contents by setting the states
-//instead of directly passing the values
 
 export const Player = ({ VideoIds, playlistTracks, TrackIdx }: PlayerProps) => {
   const [playing, setPlaying] = useState<boolean>(false);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [playingIdx, setPlayingIdx] = useState<number>(TrackIdx);
-  const [isPip, setIsPip] = useState<boolean>(false);
 
   const playerRef = useRef<YouTubePlayer | null>(null);
 
@@ -81,7 +74,6 @@ export const Player = ({ VideoIds, playlistTracks, TrackIdx }: PlayerProps) => {
   useEffect(() => {
     if (playerRef.current && isLoaded) {
       setPlayingIdx(TrackIdx);
-
       playerRef.current.loadVideoById(VideoIds[TrackIdx]);
     }
   }, [VideoIds, TrackIdx]);
@@ -127,10 +119,10 @@ export const Player = ({ VideoIds, playlistTracks, TrackIdx }: PlayerProps) => {
         ref={playerRef}
         opts={opts}
         onReady={onReady}
-        className="hidden"
+        className=""
         onStateChange={onStateChange}
       />
-      {/* <MiniPlayer playlistTracks={playlistTracks} playingIdx={playingIdx} /> */}
+
       {/* Track Info */}
       <div className="flex gap-2">
         {playlistTracks.length > 0 ? (
@@ -155,6 +147,7 @@ export const Player = ({ VideoIds, playlistTracks, TrackIdx }: PlayerProps) => {
         </div>
       </div>
 
+      {/* <AudioPlayer videoId={VideoIds[playingIdx]} /> */}
       {/* Playback Controls */}
       <div className="flex gap-2">
         <Button
@@ -171,9 +164,6 @@ export const Player = ({ VideoIds, playlistTracks, TrackIdx }: PlayerProps) => {
         </Button>
         <Button onClick={playNext} className="cursor-pointer">
           <LucideSkipForward />
-        </Button>
-        <Button onClick={() => setIsPip(!isPip)} className="cursor-pointer">
-          <LucidePictureInPicture2 />
         </Button>
       </div>
     </div>
