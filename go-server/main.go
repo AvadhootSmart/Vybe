@@ -232,7 +232,7 @@ func main() {
 			// Check if audio already exists in cache
 			cachedAudio, err := redisClient.Get(ctx, cacheKey).Bytes()
 			if err == nil && len(cachedAudio) > 0 {
-				log.Printf("Cache hit: %s (size: %d bytes)\n", videoId, len(cachedAudio))
+				log.Printf("Cache hit: %s (size: %d MBs)\n", videoId, len(cachedAudio)/(1024*1024))
 				continue // Skip downloading since it's already cached
 			} else {
 				log.Printf("Cache miss: %s. Downloading...\n", videoId)

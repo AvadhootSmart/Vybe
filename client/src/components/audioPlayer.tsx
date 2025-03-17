@@ -1,8 +1,17 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "./ui/button";
-import { LucidePause, LucidePlay, LucideSkipForward } from "lucide-react";
+import {
+  LucidePause,
+  LucidePlay,
+  LucideSkipBack,
+  LucideSkipForward,
+  LucideVolume2,
+  LucideVolumeX,
+} from "lucide-react";
 import { TRACK } from "@/types/playlist";
+import { toast } from "sonner";
+import Error from "next/error";
 
 interface AudioPlayerProps {
   VideoIds: string[];
@@ -19,6 +28,8 @@ const AudioPlayer = ({
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [playingIdx, setPlayingIdx] = useState<number>(TrackIdx);
   const [error, setError] = useState<string>("");
+  const [progress, setProgress] = useState<number>(0);
+  const [volume, setVolume] = useState<number>(0.75); // Default volume 50%
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -39,7 +50,6 @@ const AudioPlayer = ({
     try {
       setError("");
 
-      // Check if audio exists before setting src
       const response = await fetch(audioUrl, { method: "HEAD" });
       if (!response.ok) {
         throw new Error(`Failed to load audio: ${response.statusText}`);
@@ -60,12 +70,14 @@ const AudioPlayer = ({
     if (!isLoaded && VideoIds[playingIdx]) {
       fetchAudio(VideoIds[playingIdx]).then(() => {
         if (audioRef.current) {
-          audioRef.current.play().catch(() => setError("Error playing audio"));
+          audioRef.current
+            .play()
+            .catch(() => toast.error("Error playing audio"));
           setPlaying(true);
         }
       });
     } else if (audioRef.current) {
-      audioRef.current.play().catch(() => setError("Error playing audio"));
+      audioRef.current.play().catch(() => toast.error("Error playing audio"));
       setPlaying(true);
     }
   };
@@ -85,8 +97,33 @@ const AudioPlayer = ({
     }
   };
 
+  const playPrev = () => {
+    if (VideoIds.length > 0) {
+      const prevIdx = (playingIdx - 1) % VideoIds.length;
+      setPlayingIdx(prevIdx);
+      fetchAudio(VideoIds[prevIdx]);
+    }
+  };
+
+  const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newTime = parseFloat(e.target.value);
+    if (audioRef.current) {
+      audioRef.current.currentTime = newTime;
+      setProgress(newTime);
+    }
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = parseFloat(e.target.value);
+    if (audioRef.current) {
+      audioRef.current.volume = newVolume;
+    }
+    setVolume(newVolume);
+  };
+
   useEffect(() => {
-    if (audioRef.current && isLoaded) {
+    if (audioRef.current) {
+      audioRef.current.volume = volume;
       setPlayingIdx(TrackIdx);
       fetchAudio(VideoIds[TrackIdx]);
     }
@@ -98,7 +135,14 @@ const AudioPlayer = ({
 
       switch (event.key) {
         case " ":
-          playing ? handlePause() : handlePlay();
+          // playing ? handlePause() : handlePlay();
+          if (playing) {
+            handlePause();
+            setPlaying(false);
+          } else {
+            handlePlay();
+            setPlaying(true);
+          }
           break;
         case "ArrowRight":
           audioRef.current.currentTime += 5;
@@ -118,8 +162,34 @@ const AudioPlayer = ({
     };
   }, [playing]);
 
+  useEffect(() => {
+    if (audioRef.current) {
+      if (audioRef.current.paused) {
+        setPlaying(false);
+      } else {
+        setPlaying(true);
+      }
+    }
+
+    const updateProgress = () => {
+      if (audioRef.current) {
+        setProgress(audioRef.current.currentTime);
+      }
+    };
+
+    if (audioRef.current) {
+      audioRef.current.addEventListener("timeupdate", updateProgress);
+    }
+
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.removeEventListener("timeupdate", updateProgress);
+      }
+    };
+  }, []);
+
   return (
-    <div className="p-2 bg-white/10 backdrop-blur-lg sm:backdrop-blur-3xl w-full flex font-Poppins rounded-xl justify-between items-center">
+    <div className="p-2 bg-white/10 backdrop-blur-lg sm:backdrop-blur-3xl w-full flex font-Poppins rounded-xl justify-between items-center relative">
       {/* Hidden Audio Element */}
       <audio ref={audioRef} onEnded={playNext} autoPlay />
 
@@ -148,20 +218,59 @@ const AudioPlayer = ({
       </div>
 
       {/* Playback Controls */}
-      <div className="flex gap-2">
+      <div className="flex flex-col items-center gap-2 w-1/3 sm:absolute sm:top-1/2 sm:left-1/2 sm:transform sm:-translate-x-1/2 sm:-translate-y-1/2">
+        <div className="flex gap-1 md:gap-2 pr-2 md:pr-0">
+          <Button onClick={playPrev}>
+            <LucideSkipBack />
+          </Button>
+          <Button
+            onClick={playing ? handlePause : handlePlay}
+            disabled={!isLoaded}
+          >
+            {playing ? (
+              <LucidePause className="w-4 h-4" />
+            ) : (
+              <LucidePlay className="w-4 h-4" />
+            )}
+          </Button>
+          <Button onClick={playNext}>
+            <LucideSkipForward />
+          </Button>
+        </div>
+        {/* Progress Bar */}
+        <input
+          type="range"
+          min="0"
+          max={audioRef.current?.duration || 100}
+          value={progress}
+          onChange={handleProgressChange}
+          className="w-full cursor-pointer hidden md:block"
+        />
+      </div>
+
+      {/* Volume Control */}
+      <div className="items-center gap-2 hidden md:flex">
         <Button
-          onClick={playing ? handlePause : handlePlay}
-          disabled={!isLoaded}
+          onClick={() => {
+            setVolume(volume > 0 ? 0 : 0.5);
+            handleVolumeChange({ target: { value: volume > 0 ? 0 : 0.5 } });
+          }}
         >
-          {playing ? (
-            <LucidePause className="w-4 h-4" />
+          {volume > 0 ? (
+            <LucideVolume2 className="w-4 h-4" />
           ) : (
-            <LucidePlay className="w-4 h-4" />
+            <LucideVolumeX className="w-4 h-4" />
           )}
         </Button>
-        <Button onClick={playNext}>
-          <LucideSkipForward />
-        </Button>
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          value={volume}
+          onChange={handleVolumeChange}
+          className="w-20 cursor-pointer"
+        />
       </div>
     </div>
   );
