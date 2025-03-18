@@ -43,7 +43,7 @@ const AudioPlayer = ({
   const fetchAudio = async (videoId: string) => {
     if (!videoId) return;
 
-    const audioUrl = `http://localhost:8001/stream/${videoId}`;
+    const audioUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/stream/${videoId}`;
     try {
       const response = await fetch(audioUrl, { method: "HEAD" });
       if (!response.ok) {
