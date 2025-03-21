@@ -192,7 +192,7 @@ function Home() {
     }, [spotifyAccessToken]);
 
     return (
-        <div className="bg-neutral-950 w-full min-h-screen text-white p-4 font-Poppins">
+        <div className="bg-neutral-950 w-full min-h-screen text-white p-4 lg:px-[10%] font-Poppins">
             <div
                 className={`fixed inset-0 bg-black/70 flex items-center justify-center z-50 ${selectedPlaylist ? "" : "hidden"
                     }`}
@@ -257,7 +257,7 @@ function Home() {
                         ))}
                     </div>
                 ) : (
-                    <div className="grid lg:grid-cols-4 gap-4">
+                    <div className="grid md:grid-cols-4 gap-4">
                         {Playlists.map((playlist) => (
                             <PlaylistCard
                                 key={playlist.S_PID}
