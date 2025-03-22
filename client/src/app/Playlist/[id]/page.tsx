@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import { LucideChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import AudioPlayer from "@/components/audioPlayer";
+import { cn } from "@/lib/utils";
 
 const PlaylistPage = () => {
     const { id } = useParams();
@@ -15,24 +16,51 @@ const PlaylistPage = () => {
     const [playlistTracks, setPlaylistTracks] = useState<TRACK[]>([]);
     const [trackIds, setTrackIds] = useState<string[]>([]);
     const [playingIdx, setPlayingIdx] = useState<number>(0);
+    const [loadedTracks, setLoadedTracks] = useState<string[]>([]);
 
     const fetchAudioTracks = async (trackIds: string[]) => {
-        const response = await fetch(
+        if (trackIds.length === 0) return;
+
+        // const accessToken = document.cookie
+        //     .split("; ")
+        //     .find((row) => row.startsWith("spotifyAccessToken="));
+
+        const PlaylistLength = trackIds.length;
+
+        const firstFewTrackIds = PlaylistLength > 3 ? trackIds.slice(0, 3) : trackIds.slice(0, 2);
+        const remainingTrackIds = trackIds.slice(3);
+
+        const initialResponse = await fetch(
             `${process.env.NEXT_PUBLIC_BACKEND_URL}/transify`,
             {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
+                    // Authorization: `Bearer ${accessToken}`,
                 },
-                body: JSON.stringify({ videoIds: trackIds }),
+                body: JSON.stringify({ videoIds: firstFewTrackIds }),
             },
         );
 
-        if (response.ok) {
-            toast.success("Playlist Transified with audio files");
+        if (initialResponse.ok) {
+            setLoadedTracks((prev) => [...prev, ...firstFewTrackIds]);
+            toast.success("First few tracks ready!!");
         }
+        fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/transify`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ videoIds: remainingTrackIds }),
+        }).then((response) => {
+            if (response.ok) {
+                setLoadedTracks((prev) => [...prev, ...remainingTrackIds]);
+                toast.success("Playlist Transified Completely");
+            }
+        });
     };
 
+    //Fetches the current playlist from the store
     useEffect(() => {
         const currPlaylist = Playlists.filter((pl) => {
             return pl.S_PID === id;
@@ -50,25 +78,24 @@ const PlaylistPage = () => {
                         (track: TRACK) => track.YT_DATA.YT_VIDEO_ID,
                     ),
                 );
-                console.log(
-                    currPlaylist[0].S_TRACKS.map(
-                        (track: TRACK) => track.YT_DATA.YT_VIDEO_ID,
-                    ),
-                );
             } else {
                 setTrackIds([]);
+                //When no YT_DATA is found in the playlist's tracks
                 toast.error("Something went wrong while transifying playlist");
             }
         }
-
-        console.log(currPlaylist[0]);
     }, [id, Playlists]);
 
+    //Fetches audio Tracks for all the tracks
     useEffect(() => {
         if (trackIds.length > 0) {
             fetchAudioTracks(trackIds);
         }
     }, [trackIds]);
+
+    function isTrackAvailable(idx: string): boolean {
+        return loadedTracks.includes(idx);
+    }
 
     return (
         <div className="w-full min-h-screen flex flex-col gap-10 items-center font-Poppins bg-neutral-950 text-white py-8 px-2 lg:px-[20%] overflow-hidden relative">
@@ -99,15 +126,18 @@ const PlaylistPage = () => {
             {/* trackList */}
             <div className="flex flex-col gap-4 w-full mb-20">
                 {playlistTracks.map((track: TRACK, idx: number) => (
+                    // TODO: MAKE A COMPONENT FOR THIS AND STAGGER
+                    // ANIMATE THEM
                     <div
                         key={track.S_TID}
                         role="button"
-                        onClick={() => {
-                            console.log("playingIdx from click", idx);
-
-                            setPlayingIdx(idx);
-                        }}
-                        className="cursor-pointer"
+                        onClick={() => setPlayingIdx(idx)}
+                        className={cn({
+                            "cursor-pointer": isTrackAvailable(track.YT_DATA.YT_VIDEO_ID),
+                            "opacity-50 cursor-not-allowed": !isTrackAvailable(
+                                track.YT_DATA.YT_VIDEO_ID,
+                            ),
+                        })}
                     >
                         <div
                             className="w-full flex gap-2 items-center rounded-lg hover:bg-zinc-800 transition-all p-2"

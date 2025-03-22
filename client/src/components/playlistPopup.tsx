@@ -47,7 +47,7 @@ export function PlaylistPopup({
     if (isDesktop) {
         return (
             <Dialog open={open} onOpenChange={setOpen}>
-                <DialogContent className="min-w-[60vw] h-[80vh] dark font-Poppins">
+                <DialogContent className="min-w-[60vw] dark font-Poppins">
                     <DialogHeader className="flex text-white">
                         <div className="flex w-full justify-between">
                             <DialogTitle className="text-white text-2xl">
@@ -64,7 +64,7 @@ export function PlaylistPopup({
                         </div>
                     </DialogHeader>
 
-                    <div className="max-h-[65vh] overflow-y-auto space-y-4">
+                    <div className="max-h-[65vh] flex flex-col gap-4 overflow-y-auto">
                         {Playlists.find(
                             (pl) => pl.S_PID === selectedPlaylist,
                         )?.S_TRACKS.map((track: TRACK) => (

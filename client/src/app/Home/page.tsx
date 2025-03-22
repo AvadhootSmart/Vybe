@@ -1,9 +1,11 @@
 "use client";
 import { PlaylistCard } from "@/components/playlistCard";
 import { PlaylistPopup } from "@/components/playlistPopup";
+import { Button } from "@/components/ui/button";
 // import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import usePlaylistStore from "@/store/playlistStore";
+import { LucideSettings2 } from "lucide-react";
 // import { ARTIST, TRACK } from "@/types/playlist";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -187,6 +189,12 @@ function Home() {
         router.push(`/Playlist/${selectedPlaylist}`);
     }
 
+    function ClearLocalStorage() {
+        localStorage.clear();
+        toast.success("Local Storage Cleared");
+        window.location.reload();
+    }
+
     useEffect(() => {
         if (!spotifyAccessToken) return;
         fetchPlaylists();
@@ -203,7 +211,12 @@ function Home() {
                 />
             )}
             <div className="mt-8 sm:my-4 px-2">
-                <h2 className="text-3xl font-bold mb-4">Your Playlists</h2>
+                <div className="w-full flex justify-between items-center mb-8">
+                    <h2 className="text-3xl font-bold">Your Playlists</h2>
+                    <Button onClick={ClearLocalStorage}>
+                        <LucideSettings2 />
+                    </Button>
+                </div>
                 {isLoading ? (
                     <div className="grid lg:grid-cols-4 gap-4">
                         {[...Array(8)].map((_, index) => (
