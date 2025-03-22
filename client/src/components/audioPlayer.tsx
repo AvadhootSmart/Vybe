@@ -182,7 +182,11 @@ const AudioPlayer = ({
     return (
         <div className="p-2 bg-white/10 backdrop-blur-lg sm:backdrop-blur-3xl w-full flex font-Poppins rounded-xl justify-between items-center relative">
             {/* Hidden Audio Element */}
-            <audio ref={audioRef} onEnded={playNext} autoPlay />
+            <audio
+                ref={audioRef}
+                onEnded={playNext}
+                autoPlay
+            />
 
             {/* Track Info */}
             <div className="flex gap-2">

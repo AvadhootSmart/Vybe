@@ -1,6 +1,6 @@
 {
-    "name": "",
-    "short_name": "",
+    "name": "Vybe",
+    "short_name": "Vybe",
     "icons": [
         {
             "src": "/android-chrome-192x192.png",
@@ -15,5 +15,8 @@
     ],
     "theme_color": "#ffffff",
     "background_color": "#ffffff",
-    "display": "standalone"
+    "display": "standalone",
+    "orientation": "portrait",
+    "start_url": "https://vybe.avadhootsmart.xyz/",
+    "description": "Vybe - Vybe to your music, without any interruptions."
 }
