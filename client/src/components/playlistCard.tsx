@@ -5,9 +5,14 @@ import React from "react";
 interface PlaylistCardProps {
     playlist: PLAYLIST;
     getTracks: (PID: string) => void;
+    // setSelectedPlaylist?: (PID: string) => void;
 }
 
-export const PlaylistCard = ({ playlist, getTracks }: PlaylistCardProps) => {
+export const PlaylistCard = ({
+    playlist,
+    getTracks,
+    // setSelectedPlaylist,
+}: PlaylistCardProps) => {
     return (
         <>
             <div className="relative z-0">
@@ -24,7 +29,10 @@ export const PlaylistCard = ({ playlist, getTracks }: PlaylistCardProps) => {
                         </div>
                         <button
                             className="text-white/70 hover:text-white hover:scale-105 transition-all duration-100"
-                            onClick={() => getTracks(playlist.S_PID)}
+                            onClick={() => {
+                                getTracks(playlist.S_PID);
+                                // setSelectedPlaylist(playlist.S_PID);
+                            }}
                         >
                             <LucidePlayCircle className="size-16 font-semibold" />
                         </button>
