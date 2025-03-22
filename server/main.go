@@ -50,7 +50,7 @@ func main() {
 	app.Get("/spotify/playlists", func(c *fiber.Ctx) error {
 		// Extract Authorization header
 		authHeader := c.Get("Authorization")
-		log.Println(authHeader)
+		// log.Println(authHeader)
 		if authHeader == "" {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "No access token provided"})
 		}

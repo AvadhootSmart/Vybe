@@ -1,9 +1,10 @@
 "use client";
 import { PlaylistCard } from "@/components/playlistCard";
-import { Button } from "@/components/ui/button";
+import { PlaylistPopup } from "@/components/playlistPopup";
+// import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import usePlaylistStore from "@/store/playlistStore";
-import { ARTIST, TRACK } from "@/types/playlist";
+// import { ARTIST, TRACK } from "@/types/playlist";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -192,59 +193,15 @@ function Home() {
     }, [spotifyAccessToken]);
 
     return (
-        <div className="bg-neutral-950 w-full min-h-screen text-white p-4 font-Poppins">
-            <div
-                className={`fixed inset-0 bg-black/70 flex items-center justify-center z-50 ${selectedPlaylist ? "" : "hidden"
-                    }`}
-            >
-                <div className="bg-zinc-900 p-6 rounded-lg w-[80%] max-h-[80vh] overflow-y-auto">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-bold">Playlist Tracks</h2>
-                        <div className="flex items-center gap-4">
-                            <Button
-                                className="bg-zinc-500 text-white p-2 rounded-md"
-                                onClick={transifyPlaylist}
-                            >
-                                Transify playlist
-                            </Button>
-                            <button
-                                onClick={() => setSelectedPlaylist("")}
-                                className="text-gray-400 hover:text-white"
-                            >
-                                ✕
-                            </button>
-                        </div>
-                    </div>
-                    <div className="space-y-4">
-                        {Playlists.find(
-                            (pl) => pl.S_PID === selectedPlaylist,
-                        )?.S_TRACKS.map((track: TRACK) => (
-                            <div
-                                key={track.S_TID}
-                                className="flex items-center space-x-4 p-2 hover:bg-zinc-800 rounded"
-                            >
-                                {track.S_ALBUM.images[0] && (
-                                    <img
-                                        loading="lazy"
-                                        src={track.S_ALBUM.images[0].url}
-                                        alt={track.S_NAME}
-                                        className="w-12 h-12 object-cover rounded"
-                                    />
-                                )}
-                                <div>
-                                    <p className="font-medium">{track.S_NAME}</p>
-                                    <p className="text-gray-400">
-                                        {track.S_ARTISTS.map((artist: ARTIST) => artist.name).join(
-                                            ", ",
-                                        )}
-                                    </p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
+        <div className="bg-neutral-950 w-full min-h-screen text-white p-4 lg:px-[10%] font-Poppins">
+            {selectedPlaylist && (
+                <PlaylistPopup
+                    isOpen={!!selectedPlaylist}
+                    selectedPlaylist={selectedPlaylist}
+                    setSelectedPlaylist={setSelectedPlaylist}
+                    transifyPlaylist={transifyPlaylist}
+                />
+            )}
             <div className="mt-8 sm:my-4 px-2">
                 <h2 className="text-3xl font-bold mb-4">Your Playlists</h2>
                 {isLoading ? (
@@ -257,12 +214,13 @@ function Home() {
                         ))}
                     </div>
                 ) : (
-                    <div className="grid lg:grid-cols-4 gap-4">
+                    <div className="grid md:grid-cols-4 gap-4">
                         {Playlists.map((playlist) => (
                             <PlaylistCard
                                 key={playlist.S_PID}
                                 playlist={playlist}
                                 getTracks={() => getPlaylistItemsByPID(playlist.S_PID)}
+                            // setSelectedPlaylist={setSelectedPlaylist}
                             />
                         ))}
                     </div>
