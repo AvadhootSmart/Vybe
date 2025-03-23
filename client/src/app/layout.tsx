@@ -5,7 +5,8 @@ import { Toaster } from "sonner";
 export const metadata: Metadata = {
     title: "Vybe",
     description: "Vybe To your Music",
-    keywords: "Vybe, music, songs, playlists, youtube-music, spotify, ad-free music",
+    keywords:
+        "Vybe, music, songs, playlists, youtube-music, spotify, ad-free music",
     authors: [{ name: "Avadhoot Smart", url: "https://vybe.avadhootsmart.xyz" }],
     metadataBase: new URL("https://vybe.avadhootsmart.xyz"),
 };
@@ -21,7 +22,6 @@ export default function RootLayout({
                 <meta name="viewport" content="width=device-width, initial-scale=1" />
                 <meta name="robots" content="index, follow" />
                 <meta charSet="UTF-8" />
-                <link rel="canonical" href="https://vybe.avadhootsmart.xyz" />
                 <link
                     rel="apple-touch-icon"
                     sizes="180x180"
@@ -39,7 +39,6 @@ export default function RootLayout({
                     sizes="16x16"
                     href="/favicon-16x16.png"
                 />
-                <link rel="manifest" href="/site.webmanifest" />
             </head>
             <body className={`antialiased`}>
                 <main>{children}</main>
