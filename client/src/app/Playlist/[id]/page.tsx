@@ -8,18 +8,24 @@ import { LucideChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import AudioPlayer from "@/components/audioPlayer";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const PlaylistPage = () => {
     const { id } = useParams();
+    const router = useRouter();
+
     const Playlists = usePlaylistStore((state) => state.Playlists);
     const [currentPlaylist, setCurrentPlaylist] = useState<PLAYLIST | null>(null);
     const [playlistTracks, setPlaylistTracks] = useState<TRACK[]>([]);
     const [trackIds, setTrackIds] = useState<string[]>([]);
     const [playingIdx, setPlayingIdx] = useState<number>(0);
     const [loadedTracks, setLoadedTracks] = useState<string[]>([]);
+    const [loading, setLoading] = useState<boolean>(false);
 
     const fetchAudioTracks = async (trackIds: string[]) => {
         if (trackIds.length === 0) return;
+        setLoading(true);
 
         // const accessToken = document.cookie
         //     .split("; ")
@@ -27,7 +33,8 @@ const PlaylistPage = () => {
 
         const PlaylistLength = trackIds.length;
 
-        const firstFewTrackIds = PlaylistLength > 3 ? trackIds.slice(0, 3) : trackIds.slice(0, 2);
+        const firstFewTrackIds =
+            PlaylistLength > 3 ? trackIds.slice(0, 3) : trackIds.slice(0, 2);
         const remainingTrackIds = trackIds.slice(3);
 
         const initialResponse = await fetch(
@@ -44,6 +51,7 @@ const PlaylistPage = () => {
 
         if (initialResponse.ok) {
             setLoadedTracks((prev) => [...prev, ...firstFewTrackIds]);
+            setLoading(false);
             toast.success("First few tracks ready!!");
         }
         fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/transify`, {
@@ -81,7 +89,8 @@ const PlaylistPage = () => {
             } else {
                 setTrackIds([]);
                 //When no YT_DATA is found in the playlist's tracks
-                toast.error("Something went wrong while transifying playlist");
+                // toast.error("Something went wrong while transifying playlist");
+                router.push("/Home?error=true");
             }
         }
     }, [id, Playlists]);
@@ -99,13 +108,17 @@ const PlaylistPage = () => {
 
     return (
         <div className="w-full min-h-screen flex flex-col gap-10 items-center font-Poppins bg-neutral-950 text-white py-8 px-2 lg:px-[20%] overflow-hidden relative">
-            <div className="fixed bottom-8 w-[90%] lg:w-[60%] ">
-                <AudioPlayer
-                    TrackIdx={playingIdx}
-                    playlistTracks={playlistTracks}
-                    VideoIds={trackIds}
-                />
-            </div>
+            {loading ? (
+                <Skeleton className="fixed bg-zinc-800 bottom-8 w-[90%] lg:w-[60%] "/>
+            ) : (
+                <div className="fixed z-50 bottom-8 w-[90%] lg:w-[60%] ">
+                    <AudioPlayer
+                        TrackIdx={playingIdx}
+                        playlistTracks={playlistTracks}
+                        VideoIds={trackIds}
+                    />
+                </div>
+            )}
             <div className="fixed top-4 left-4 lg:top-10 lg:left-10">
                 <Link href={`/Home`}>
                     <LucideChevronLeft className="size-8 sm:size-10" />

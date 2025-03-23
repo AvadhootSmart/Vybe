@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import usePlaylistStore from "@/store/playlistStore";
 import { LucideSettings2 } from "lucide-react";
 // import { ARTIST, TRACK } from "@/types/playlist";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -199,6 +199,20 @@ function Home() {
         if (!spotifyAccessToken) return;
         fetchPlaylists();
     }, [spotifyAccessToken]);
+
+    const searchParams = useSearchParams();
+
+    useEffect(() => {
+        if (searchParams.get("error") === "true") {
+            toast.error(
+                "Something went wrong while transifying playlist, Clear Cache and try again later",
+            );
+
+            const newParams = new URLSearchParams(searchParams.toString());
+            newParams.delete("error");
+            router.replace(`/?${newParams.toString()}`, { scroll: false });
+        }
+    }, [searchParams, router]);
 
     return (
         <div className="bg-neutral-950 w-full min-h-screen text-white p-4 lg:px-[10%] font-Poppins">
