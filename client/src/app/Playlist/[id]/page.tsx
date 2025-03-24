@@ -10,6 +10,8 @@ import AudioPlayer from "@/components/audioPlayer";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TrackCard } from "@/components/trackCard";
+import { motion as m } from "motion/react";
 
 const PlaylistPage = () => {
     const { id } = useParams();
@@ -106,10 +108,20 @@ const PlaylistPage = () => {
         return loadedTracks.includes(idx);
     }
 
+    const TrackCardVariants = {
+        visible: {
+            opacity: 1,
+            filter: "blur(0px)",
+        },
+        hidden: {
+            opacity: 0,
+            filter: "blur(10px)",
+        },
+    };
     return (
         <div className="w-full min-h-screen flex flex-col gap-10 items-center font-Poppins bg-neutral-950 text-white py-8 px-2 lg:px-[20%] overflow-hidden relative">
             {loading ? (
-                <Skeleton className="fixed bg-zinc-800 bottom-8 w-[90%] lg:w-[60%] "/>
+                <Skeleton className="fixed bg-zinc-800 bottom-8 w-[90%] lg:w-[60%] " />
             ) : (
                 <div className="fixed z-50 bottom-8 w-[90%] lg:w-[60%] ">
                     <AudioPlayer
@@ -139,37 +151,22 @@ const PlaylistPage = () => {
             {/* trackList */}
             <div className="flex flex-col gap-4 w-full mb-20">
                 {playlistTracks.map((track: TRACK, idx: number) => (
-                    // TODO: MAKE A COMPONENT FOR THIS AND STAGGER
-                    // ANIMATE THEM
-                    <div
+                    <m.div
                         key={track.S_TID}
+                        variants={TrackCardVariants}
+                        initial="hidden"
+                        animate="visible"
                         role="button"
                         onClick={() => setPlayingIdx(idx)}
                         className={cn({
                             "cursor-pointer": isTrackAvailable(track.YT_DATA.YT_VIDEO_ID),
-                            "opacity-50 cursor-not-allowed": !isTrackAvailable(
+                            "opacity-50 pointer-events-none": !isTrackAvailable(
                                 track.YT_DATA.YT_VIDEO_ID,
                             ),
                         })}
                     >
-                        <div
-                            className="w-full flex gap-2 items-center rounded-lg hover:bg-zinc-800 transition-all p-2"
-                            key={track.S_TID}
-                        >
-                            {/* eslint-disable-next-line */}
-                            <img
-                                src={track.S_ALBUM.images[0].url}
-                                alt={track.S_NAME}
-                                className="size-20 object-cover rounded-lg"
-                            />
-                            <div>
-                                <h1 className="lg:text-xl sm:text-lg">{track.S_NAME}</h1>
-                                <h2 className="lg:text-lg sm:text-md text-zinc-400">
-                                    {track.S_ARTISTS[0].name}
-                                </h2>
-                            </div>
-                        </div>
-                    </div>
+                        <TrackCard track={track} />
+                    </m.div>
                 ))}
             </div>
         </div>
