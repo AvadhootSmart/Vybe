@@ -8,6 +8,7 @@ import {
     LucideSkipForward,
     LucideVolume2,
     LucideVolumeX,
+    LucideShuffle,
 } from "lucide-react";
 import { TRACK } from "@/types/playlist";
 import { toast } from "sonner";
@@ -29,22 +30,16 @@ const AudioPlayer = ({
     const [playingIdx, setPlayingIdx] = useState(TrackIdx);
     const [progress, setProgress] = useState(0);
     const [volume, setVolume] = useState(0.75);
+    const [isShuffle, setShuffle] = useState(false);
 
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
-    useEffect(() => {
-        setIsLoaded(false);
-        if (audioRef.current) {
-            audioRef.current.pause();
-            audioRef.current.src = "";
-        }
-    }, [VideoIds, TrackIdx]);
-
     const fetchAudio = async (videoId: string) => {
         if (!videoId) return;
-        setIsLoaded(false);
 
+        setIsLoaded(false);
         const audioUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/stream/${videoId}`;
+
         try {
             const response = await fetch(audioUrl, { method: "HEAD" });
             if (!response.ok) {
@@ -57,7 +52,7 @@ const AudioPlayer = ({
                 audioRef.current.load();
                 audioRef.current.oncanplaythrough = () => {
                     setIsLoaded(true);
-                    handlePlay(); // Auto-play after loading
+                    handlePlay();
                 };
             }
         } catch (error) {
@@ -83,28 +78,29 @@ const AudioPlayer = ({
         }
     };
 
-    const playNext = () => {
-        if (VideoIds.length > 0) {
-            const nextIdx = (playingIdx + 1) % VideoIds.length;
-            setPlayingIdx(nextIdx);
-            fetchAudio(VideoIds[nextIdx]);
+    const getNextIndex: () => number = () => {
+        if (isShuffle) {
+            const randomIdx = Math.floor(Math.random() * VideoIds.length);
+            return randomIdx !== playingIdx ? randomIdx : getNextIndex();
         }
+        return (playingIdx + 1) % VideoIds.length;
+    };
+
+    const playNext = () => {
+        const nextIdx = getNextIndex();
+        setPlayingIdx(nextIdx);
+        fetchAudio(VideoIds[nextIdx]);
     };
 
     const playPrev = () => {
-        if (VideoIds.length > 0) {
-            const prevIdx = (playingIdx - 1 + VideoIds.length) % VideoIds.length;
-            setPlayingIdx(prevIdx);
-            fetchAudio(VideoIds[prevIdx]);
-        }
+        const prevIdx = (playingIdx - 1 + VideoIds.length) % VideoIds.length;
+        setPlayingIdx(prevIdx);
+        fetchAudio(VideoIds[prevIdx]);
     };
 
     const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newTime = parseFloat(e.target.value);
-        if (audioRef.current) {
-            audioRef.current.currentTime = newTime;
-            setProgress(newTime);
-        }
+        setProgress(newTime);
     };
 
     const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -122,16 +118,21 @@ const AudioPlayer = ({
         }
     };
 
-    //Sets initial volume, manages trackIdx changes, fetchAudioStreams
+    const toggleShuffle = () => {
+        setShuffle((prev) => !prev);
+    };
+
+    useEffect(() => {
+        setPlayingIdx(TrackIdx);
+        fetchAudio(VideoIds[TrackIdx]);
+    }, [VideoIds, TrackIdx]);
+
     useEffect(() => {
         if (audioRef.current) {
             audioRef.current.volume = volume;
-            setPlayingIdx(TrackIdx);
-            fetchAudio(VideoIds[TrackIdx]);
         }
-    }, [VideoIds, TrackIdx]);
+    }, []);
 
-    //handles keyboard shortcuts
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             if (!audioRef.current) return;
@@ -150,6 +151,7 @@ const AudioPlayer = ({
                 case "ArrowLeft":
                     audioRef.current.currentTime -= 5;
                     break;
+                case "n":
                 case "N":
                     playNext();
                     break;
@@ -160,7 +162,6 @@ const AudioPlayer = ({
         return () => document.removeEventListener("keydown", handleKeyDown);
     }, [playing]);
 
-    //Updates Track;s Progress bar
     useEffect(() => {
         const updateProgress = () => {
             if (audioRef.current) {
@@ -168,15 +169,9 @@ const AudioPlayer = ({
             }
         };
 
-        if (audioRef.current) {
-            audioRef.current.addEventListener("timeupdate", updateProgress);
-        }
-
-        return () => {
-            if (audioRef.current) {
-                audioRef.current.removeEventListener("timeupdate", updateProgress);
-            }
-        };
+        audioRef.current?.addEventListener("timeupdate", updateProgress);
+        return () =>
+            audioRef.current?.removeEventListener("timeupdate", updateProgress);
     }, []);
 
     return (
@@ -238,7 +233,6 @@ const AudioPlayer = ({
 
             {/* Playback Controls */}
             <div className="flex flex-col items-center gap-2 w-1/3 sm:absolute sm:top-1/2 sm:left-1/2 sm:transform sm:-translate-x-1/2 sm:-translate-y-1/2">
-                {/* Playback buttons */}
                 <div className="flex gap-1 md:gap-2 pr-2 md:pr-0">
                     <Button onClick={playPrev}>
                         <LucideSkipBack />
@@ -256,7 +250,16 @@ const AudioPlayer = ({
                     <Button onClick={playNext}>
                         <LucideSkipForward />
                     </Button>
+                    <Button
+                        variant={isShuffle ? "default" : "outline"}
+                        onClick={toggleShuffle}
+                        title="Toggle Shuffle"
+                        className="dark"
+                    >
+                        <LucideShuffle className="w-4 h-4" />
+                    </Button>
                 </div>
+
                 {/* ProgressBar */}
                 <div className="relative mt-2 w-full lg:h-2 h-3 bg-gray-700 rounded-full">
                     <m.div

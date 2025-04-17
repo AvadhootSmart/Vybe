@@ -14,6 +14,7 @@ import (
 
 	"github.com/go-resty/resty/v2"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/joho/godotenv"
 	"github.com/redis/go-redis/v9"
@@ -40,6 +41,13 @@ func main() {
 
 	app := fiber.New()
 	client := resty.New()
+
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     "http://localhost:3000",
+		AllowMethods:     "GET,POST,PUT,DELETE",
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
+		AllowCredentials: true,
+	}))
 
 	app.Use(logger.New())
 
