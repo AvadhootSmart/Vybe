@@ -158,6 +158,10 @@ func main() {
 			}
 		}
 
+		if len(formattedTracks) == 0 {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "No tracks found"})
+		}
+
 		return c.JSON(formattedTracks)
 	})
 

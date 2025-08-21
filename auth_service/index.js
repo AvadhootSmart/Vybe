@@ -127,7 +127,7 @@ app.get(
 app.get(
   "/auth/google",
   passport.authenticate("google", {
-    scope: ["profile", "email", "https://www.googleapis.com/auth/youtube"],
+    scope: ["profile", "email", "https://www.googleapis.com/auth/youtube.readonly"],
   }),
 );
 

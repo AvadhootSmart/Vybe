@@ -64,10 +64,10 @@ export function PlaylistPopup({
                         </div>
                     </DialogHeader>
 
-                    <div className="max-h-[65vh] flex flex-col gap-4 overflow-y-auto">
+                    <div className="max-h-[80vh] flex flex-col gap-4 overflow-y-auto">
                         {Playlists.find(
                             (pl) => pl.S_PID === selectedPlaylist,
-                        )?.S_TRACKS.map((track: TRACK) => (
+                        )?.S_TRACKS.slice().reverse().map((track: TRACK) => (
                             <div
                                 key={track.S_TID}
                                 className="flex items-center space-x-4 p-2 hover:bg-zinc-800 rounded"
@@ -111,7 +111,7 @@ export function PlaylistPopup({
                 </DrawerHeader>
 
                 <div className="max-h-[65vh] overflow-y-auto space-y-4">
-                    {Playlists.find((pl) => pl.S_PID === selectedPlaylist)?.S_TRACKS.map(
+                    {Playlists.find((pl) => pl.S_PID === selectedPlaylist)?.S_TRACKS.slice().reverse().map(
                         (track: TRACK) => (
                             <div
                                 key={track.S_TID}
