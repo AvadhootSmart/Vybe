@@ -1,3 +1,333 @@
+// "use client";
+// import React, { useState, useRef, useEffect } from "react";
+// import { Button } from "./ui/button";
+// import {
+//   LucidePause,
+//   LucidePlay,
+//   LucideSkipBack,
+//   LucideSkipForward,
+//   LucideVolume2,
+//   LucideVolumeX,
+//   LucideShuffle,
+// } from "lucide-react";
+// import { TRACK } from "@/types/playlist";
+// import { toast } from "sonner";
+// import { AnimatePresence, motion as m } from "motion/react";
+
+// interface AudioPlayerProps {
+//   VideoIds: string[];
+//   playlistTracks: TRACK[];
+//   TrackIdx: number;
+// }
+
+// const AudioPlayer = ({
+//   VideoIds,
+//   playlistTracks,
+//   TrackIdx,
+// }: AudioPlayerProps) => {
+//   const [playing, setPlaying] = useState(false);
+//   const [isLoaded, setIsLoaded] = useState(false);
+//   const [playingIdx, setPlayingIdx] = useState(TrackIdx);
+//   const [progress, setProgress] = useState(0);
+//   //   const [duration, setDuration] = useState(
+//   //     playlistTracks[TrackIdx]?.S_DURATION_MS || 0
+//   //   );
+//   const [volume, setVolume] = useState(0.25);
+//   const [isShuffle, setShuffle] = useState(false);
+
+//   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+//   const fetchAudio = async (videoId: string) => {
+//     if (!videoId) {
+//       setIsLoaded(false);
+//       toast.error("No video ID found");
+//       return;
+//     }
+
+//     setIsLoaded(false);
+//     const audioUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/stream/${videoId}`;
+
+//     try {
+//       const response = await fetch(audioUrl, { method: "HEAD" });
+//       if (!response.ok) {
+//         setIsLoaded(false);
+//         toast.error("Failed to load & play audio");
+//         return;
+//       }
+
+//       if (audioRef.current) {
+//         audioRef.current.src = audioUrl;
+//         audioRef.current.load();
+
+//         // Remove any previous event handler to avoid multiple triggers
+//         audioRef.current.oncanplaythrough = null;
+
+//         // Set loading state to true only when audio is ready
+//         audioRef.current.oncanplaythrough = () => {
+//           setIsLoaded(true);
+//           handlePlay();
+//         };
+
+//         // In case of error loading audio, reset loading state
+//         audioRef.current.onerror = () => {
+//           setIsLoaded(false);
+//           toast.error("Error loading audio");
+//         };
+//       } else {
+//         setIsLoaded(false);
+//       }
+//     } catch (error) {
+//       setIsLoaded(false);
+//       toast.error("Error fetching audio");
+//       console.error(error);
+//     }
+//   };
+
+//   const handlePlay = () => {
+//     if (!isLoaded) return;
+//     if (audioRef.current) {
+//       audioRef.current
+//         .play()
+//         .then(() => setPlaying(true))
+//         .catch(() => toast.error("Error playing audio"));
+//     }
+//   };
+
+//   const handlePause = () => {
+//     if (audioRef.current) {
+//       audioRef.current.pause();
+//       setPlaying(false);
+//     }
+//   };
+
+//   const getNextIndex: () => number = () => {
+//     if (isShuffle) {
+//       const randomIdx = Math.floor(Math.random() * VideoIds.length);
+//       return randomIdx !== playingIdx ? randomIdx : getNextIndex();
+//     }
+//     return (playingIdx + 1) % VideoIds.length;
+//   };
+
+//   const playNext = () => {
+//     const nextIdx = getNextIndex();
+//     setPlayingIdx(nextIdx);
+//     fetchAudio(VideoIds[nextIdx]);
+//   };
+
+//   const playPrev = () => {
+//     const prevIdx = (playingIdx - 1 + VideoIds.length) % VideoIds.length;
+//     setPlayingIdx(prevIdx);
+//     fetchAudio(VideoIds[prevIdx]);
+//   };
+
+//   //   const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+//   //     const newTime = parseFloat(e.target.value);
+//   //     setProgress(newTime);
+//   //   };
+
+//   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+//     const newVolume = parseFloat(e.target.value);
+//     if (audioRef.current) {
+//       audioRef.current.volume = newVolume;
+//     }
+//     setVolume(newVolume);
+//   };
+
+//   const toggleMute = () => {
+//     if (audioRef.current) {
+//       audioRef.current.muted = !audioRef.current.muted;
+//       setVolume(audioRef.current.muted ? 0 : audioRef.current.volume);
+//     }
+//   };
+
+//   const toggleShuffle = () => {
+//     setShuffle((prev) => !prev);
+//   };
+
+//   useEffect(() => {
+//     setPlayingIdx(TrackIdx);
+//     fetchAudio(VideoIds[TrackIdx]);
+//   }, [VideoIds, TrackIdx]);
+
+//   useEffect(() => {
+//     if (audioRef.current) {
+//       audioRef.current.volume = volume;
+//     }
+//   }, []);
+
+//   useEffect(() => {
+//     const handleKeyDown = (event: KeyboardEvent) => {
+//       if (!audioRef.current) return;
+//       switch (event.key) {
+//         case " ":
+//           event.preventDefault();
+//           if (playing) {
+//             handlePause();
+//           } else {
+//             handlePlay();
+//           }
+//           break;
+//         case "ArrowRight":
+//           audioRef.current.currentTime += 5;
+//           break;
+//         case "ArrowLeft":
+//           audioRef.current.currentTime -= 5;
+//           break;
+//         case "n":
+//         case "N":
+//           playNext();
+//           break;
+//       }
+//     };
+
+//     document.addEventListener("keydown", handleKeyDown);
+//     return () => document.removeEventListener("keydown", handleKeyDown);
+//   }, [playing]);
+
+//   useEffect(() => {
+//     const updateProgress = () => {
+//       if (audioRef.current) {
+//         setProgress(audioRef.current.currentTime);
+//       }
+//     };
+
+//     audioRef.current?.addEventListener("timeupdate", updateProgress);
+//     return () =>
+//       audioRef.current?.removeEventListener("timeupdate", updateProgress);
+//   }, []);
+
+//   return (
+//     <div className="p-2 bg-white/10 backdrop-blur-lg w-full flex sm:flex-row flex-col font-Poppins rounded-xl sm:justify-between sm:items-center items-center relative">
+//       {/* Hidden Audio Element */}
+//       <audio
+//         ref={audioRef}
+//         onEnded={playNext}
+//         onPlay={() => setPlaying(true)}
+//         onPause={() => setPlaying(false)}
+//         autoPlay
+//       />
+
+//       {/* Track Info */}
+//       <div className="hidden gap-2 sm:flex">
+//         <AnimatePresence mode="wait">
+//           {playlistTracks.length > 0 ? (
+//             <m.img
+//               key={playingIdx}
+//               initial={{ opacity: 0, filter: "blur(10px)" }}
+//               animate={{ opacity: 1, filter: "blur(0px)" }}
+//               exit={{ opacity: 0, filter: "blur(10px)" }}
+//               transition={{ duration: 0.3 }}
+//               loading="lazy"
+//               src={playlistTracks[playingIdx]?.S_ALBUM?.images?.[0]?.url}
+//               alt="Album Cover"
+//               className="size-20 rounded-lg"
+//             />
+//           ) : (
+//             <div className="size-20 rounded-lg bg-zinc-700"></div>
+//           )}
+//         </AnimatePresence>
+//         <div className="flex flex-col">
+//           <AnimatePresence mode="wait">
+//             <m.h1
+//               key={`title-${playingIdx}`}
+//               initial={{ opacity: 0, filter: "blur(10px)" }}
+//               animate={{ opacity: 1, filter: "blur(0px)" }}
+//               exit={{ opacity: 0, filter: "blur(10px)" }}
+//               transition={{ duration: 0.35 }}
+//               className="text-sm font-semibold"
+//             >
+//               {playlistTracks[playingIdx]?.S_NAME || "Unknown Track"}
+//             </m.h1>
+//             <m.h2
+//               key={`artist-${playingIdx}`}
+//               initial={{ opacity: 0, filter: "blur(10px)" }}
+//               animate={{ opacity: 1, filter: "blur(0px)" }}
+//               exit={{ opacity: 0, filter: "blur(10px)" }}
+//               transition={{ duration: 0.4 }}
+//               className="text-neutral-400 text-xs"
+//             >
+//               {playlistTracks[playingIdx]?.S_ARTISTS?.[0]?.name ||
+//                 "Unknown Artist"}
+//             </m.h2>
+//           </AnimatePresence>
+//         </div>
+//       </div>
+
+//       {/* Playback Controls */}
+//       <div className="flex flex-col-reverse sm:flex-col items-center gap-2 w-full sm:w-1/3 sm:absolute sm:top-1/2 sm:left-1/2 sm:transform sm:-translate-x-1/2 sm:-translate-y-1/2">
+//         <div className="flex gap-1 md:gap-2 justify-center sm:justify-start">
+//           <Button onClick={playPrev}>
+//             <LucideSkipBack />
+//           </Button>
+//           <Button
+//             variant="default"
+//             onClick={playing ? handlePause : handlePlay}
+//             disabled={!isLoaded}
+//           >
+//             {playing ? (
+//               <LucidePause className="w-4 h-4" />
+//             ) : (
+//               <LucidePlay className="w-4 h-4" />
+//             )}
+//           </Button>
+//           <Button onClick={playNext}>
+//             <LucideSkipForward />
+//           </Button>
+//           <Button
+//             variant={isShuffle ? "default" : "outline"}
+//             onClick={toggleShuffle}
+//             title="Toggle Shuffle"
+//             className="dark"
+//           >
+//             <LucideShuffle className="w-4 h-4" />
+//           </Button>
+//         </div>
+
+//         {/* ProgressBar */}
+//         <div className="relative mt-2 w-full lg:h-2 h-3 bg-gray-700 rounded-full">
+//           <m.div
+//             className="absolute top-0 left-0 lg:h-2 h-3 bg-[#ccff00] rounded-full"
+//             animate={{
+//               width: `${(progress / (audioRef.current?.duration || 100)) * 100
+//                 }%`,
+//             }}
+//             transition={{ type: "spring", stiffness: 120, damping: 15 }}
+//           />
+//           {/* <input
+//             type="range"
+//             min="0"
+//             max={audioRef.current?.duration || 100}
+//             value={progress}
+//             // onChange={handleProgressChange}
+//             className="w-full cursor-pointer hidden sm:block opacity-0 absolute"
+//           /> */}
+//         </div>
+//       </div>
+
+//       {/* Volume Control */}
+//       <div className="items-center gap-2 hidden md:flex">
+//         <Button onClick={toggleMute}>
+//           {volume > 0 ? (
+//             <LucideVolume2 className="w-4 h-4" />
+//           ) : (
+//             <LucideVolumeX className="w-4 h-4" />
+//           )}
+//         </Button>
+//         <input
+//           type="range"
+//           min="0"
+//           max="1"
+//           step="0.01"
+//           value={volume}
+//           onChange={handleVolumeChange}
+//           className="w-20 cursor-pointer"
+//         />
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default AudioPlayer;
 "use client";
 import React, { useState, useRef, useEffect } from "react";
 import { Button } from "./ui/button";
@@ -29,68 +359,33 @@ const AudioPlayer = ({
   const [isLoaded, setIsLoaded] = useState(false);
   const [playingIdx, setPlayingIdx] = useState(TrackIdx);
   const [progress, setProgress] = useState(0);
-//   const [duration, setDuration] = useState(
-//     playlistTracks[TrackIdx]?.S_DURATION_MS || 0
-//   );
   const [volume, setVolume] = useState(0.25);
   const [isShuffle, setShuffle] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const fetchAudio = async (videoId: string) => {
+  const fetchAudio = (videoId: string) => {
     if (!videoId) {
       setIsLoaded(false);
       toast.error("No video ID found");
       return;
     }
 
-    setIsLoaded(false);
     const audioUrl = `${process.env.NEXT_PUBLIC_BACKEND_URL}/stream/${videoId}`;
 
-    try {
-      const response = await fetch(audioUrl, { method: "HEAD" });
-      if (!response.ok) {
-        setIsLoaded(false);
-        toast.error("Failed to load & play audio");
-        return;
-      }
-
-      if (audioRef.current) {
-        audioRef.current.src = audioUrl;
-        audioRef.current.load();
-
-        // Remove any previous event handler to avoid multiple triggers
-        audioRef.current.oncanplaythrough = null;
-
-        // Set loading state to true only when audio is ready
-        audioRef.current.oncanplaythrough = () => {
-          setIsLoaded(true);
-          handlePlay();
-        };
-
-        // In case of error loading audio, reset loading state
-        audioRef.current.onerror = () => {
-          setIsLoaded(false);
-          toast.error("Error loading audio");
-        };
-      } else {
-        setIsLoaded(false);
-      }
-    } catch (error) {
+    if (audioRef.current) {
       setIsLoaded(false);
-      toast.error("Error fetching audio");
-      console.error(error);
+      audioRef.current.src = audioUrl;
+      audioRef.current.load();
     }
   };
 
   const handlePlay = () => {
-    if (!isLoaded) return;
-    if (audioRef.current) {
-      audioRef.current
-        .play()
-        .then(() => setPlaying(true))
-        .catch(() => toast.error("Error playing audio"));
-    }
+    if (!isLoaded || !audioRef.current) return;
+    audioRef.current
+      .play()
+      .then(() => setPlaying(true))
+      .catch(() => toast.error("Error playing audio (autoplay blocked?)"));
   };
 
   const handlePause = () => {
@@ -100,7 +395,7 @@ const AudioPlayer = ({
     }
   };
 
-  const getNextIndex: () => number = () => {
+  const getNextIndex = (): number => {
     if (isShuffle) {
       const randomIdx = Math.floor(Math.random() * VideoIds.length);
       return randomIdx !== playingIdx ? randomIdx : getNextIndex();
@@ -120,11 +415,6 @@ const AudioPlayer = ({
     fetchAudio(VideoIds[prevIdx]);
   };
 
-//   const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-//     const newTime = parseFloat(e.target.value);
-//     setProgress(newTime);
-//   };
-
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newVolume = parseFloat(e.target.value);
     if (audioRef.current) {
@@ -140,9 +430,7 @@ const AudioPlayer = ({
     }
   };
 
-  const toggleShuffle = () => {
-    setShuffle((prev) => !prev);
-  };
+  const toggleShuffle = () => setShuffle((prev) => !prev);
 
   useEffect(() => {
     setPlayingIdx(TrackIdx);
@@ -161,11 +449,7 @@ const AudioPlayer = ({
       switch (event.key) {
         case " ":
           event.preventDefault();
-          if (playing) {
-            handlePause();
-          } else {
-            handlePlay();
-          }
+          playing ? handlePause() : handlePlay();
           break;
         case "ArrowRight":
           audioRef.current.currentTime += 5;
@@ -179,7 +463,6 @@ const AudioPlayer = ({
           break;
       }
     };
-
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [playing]);
@@ -190,7 +473,6 @@ const AudioPlayer = ({
         setProgress(audioRef.current.currentTime);
       }
     };
-
     audioRef.current?.addEventListener("timeupdate", updateProgress);
     return () =>
       audioRef.current?.removeEventListener("timeupdate", updateProgress);
@@ -204,7 +486,11 @@ const AudioPlayer = ({
         onEnded={playNext}
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
-        autoPlay
+        onLoadedData={() => setIsLoaded(true)} // 🔑 replaced oncanplaythrough
+        onError={() => {
+          setIsLoaded(false);
+          toast.error("Error loading audio");
+        }}
       />
 
       {/* Track Info */}
@@ -288,20 +574,11 @@ const AudioPlayer = ({
           <m.div
             className="absolute top-0 left-0 lg:h-2 h-3 bg-[#ccff00] rounded-full"
             animate={{
-              width: `${
-                (progress / (audioRef.current?.duration || 100)) * 100
-              }%`,
+              width: `${(progress / (audioRef.current?.duration || 100)) * 100
+                }%`,
             }}
             transition={{ type: "spring", stiffness: 120, damping: 15 }}
           />
-          {/* <input
-            type="range"
-            min="0"
-            max={audioRef.current?.duration || 100}
-            value={progress}
-            // onChange={handleProgressChange}
-            className="w-full cursor-pointer hidden sm:block opacity-0 absolute"
-          /> */}
         </div>
       </div>
 

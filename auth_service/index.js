@@ -137,11 +137,8 @@ app.get(
     failureRedirect: `${process.env.FRONTEND_URL}`,
   }),
   (req, res) => {
-    res.cookie("googleAccessToken", req.user.accessToken, {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-    });
-    res.redirect(`${process.env.FRONTEND_URL}/Home`);
+    const token = encodeURIComponent(req.user.accessToken);
+    res.redirect(`${process.env.FRONTEND_URL}/Success?googleAccessToken=${token}`);
   },
 );
 

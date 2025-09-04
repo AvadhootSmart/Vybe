@@ -44,7 +44,7 @@ func main() {
 
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     "http://localhost:3000",
-		AllowMethods:     "GET,POST,PUT,DELETE",
+		AllowMethods:     "GET,POST,PUT,DELETE,HEAD",
 		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
 		AllowCredentials: true,
 	}))
@@ -165,6 +165,80 @@ func main() {
 		return c.JSON(formattedTracks)
 	})
 
+	app.Post("/explore/search", func(c *fiber.Ctx) error {
+		type Request struct {
+			Query string `json:"query"`
+		}
+
+		rq := new(Request)
+		if err := c.BodyParser(rq); err != nil {
+			log.Println("Error parsing request body:", err)
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request format"})
+		}
+
+		query := url.QueryEscape(rq.Query)
+
+		authHeader := c.Get("Authorization")
+		var reqUrl string
+		req := client.R().SetHeader("Content-Type", "application/json")
+		if authHeader != "" {
+			// Use Bearer token
+			req.SetHeader("Authorization", authHeader)
+			reqUrl = fmt.Sprintf(
+				"https://youtube.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=5&q=%s",
+				query,
+			)
+		} else {
+			// Use API key
+
+			log.Println("Using API_KEY for the request")
+			reqUrl = fmt.Sprintf(
+				"https://youtube.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=2&q=%s&key=%s",
+				query, YOUTUBE_API_KEY,
+			)
+		}
+
+		resp, err := req.Get(reqUrl)
+		if err != nil {
+			log.Println("Error fetching YouTube search results:", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch YouTube data"})
+		}
+
+		// Check HTTP status code
+		if resp.StatusCode() != 200 {
+			log.Println("YouTube API error:", resp.Status(), string(resp.Body()))
+			return c.Status(resp.StatusCode()).JSON(fiber.Map{"error": "YouTube API error"})
+		}
+
+		// Parse YouTube response
+		var result struct {
+			Items []struct {
+				ID struct {
+					VideoID string `json:"videoId"`
+				} `json:"id"`
+				Snippet struct {
+					Title string `json:"title"`
+				} `json:"snippet"`
+			} `json:"items"`
+		}
+
+		if err := json.Unmarshal(resp.Body(), &result); err != nil {
+			log.Println("Error parsing YouTube response:", err)
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to parse YouTube response"})
+		}
+
+		// Format Response
+		formattedYTResponse := make([]fiber.Map, len(result.Items))
+		for i, item := range result.Items {
+			formattedYTResponse[i] = fiber.Map{
+				"YT_VIDEO_ID": item.ID.VideoID,
+				"YT_TITLE":    item.Snippet.Title,
+			}
+		}
+
+		return c.JSON(formattedYTResponse)
+	})
+
 	app.Post("/youtube/search", func(c *fiber.Ctx) error {
 		type SearchRequest struct {
 			TrackName  string `json:"trackName"`
@@ -180,12 +254,27 @@ func main() {
 		trackName := url.QueryEscape(sq.TrackName)
 		artistName := url.QueryEscape(sq.ArtistName)
 
-		reqUrl := fmt.Sprintf(
-			"https://youtube.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=2&q=%s+%s&key=%s",
-			trackName, artistName, YOUTUBE_API_KEY,
-		)
+		authHeader := c.Get("Authorization")
+		var reqUrl string
+		req := client.R().SetHeader("Content-Type", "application/json")
+		if authHeader != "" {
+			// Use Bearer token
+			req.SetHeader("Authorization", authHeader)
+			reqUrl = fmt.Sprintf(
+				"https://youtube.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=2&q=%s+%s",
+				trackName, artistName,
+			)
+		} else {
+			// Use API key
 
-		resp, err := client.R().SetHeader("Content-Type", "application/json").Get(reqUrl)
+			log.Println("Using API key for request")
+			reqUrl = fmt.Sprintf(
+				"https://youtube.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=2&q=%s+%s&key=%s",
+				trackName, artistName, YOUTUBE_API_KEY,
+			)
+		}
+
+		resp, err := req.Get(reqUrl)
 		if err != nil {
 			log.Println("Error fetching YouTube search results:", err)
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch YouTube data"})
@@ -296,16 +385,46 @@ func main() {
 
 		audioData, err := redisClient.Get(ctx, "audio:"+videoId).Bytes()
 		if err == redis.Nil {
-			log.Println("Key not found in Redis:", videoId)
 			return c.Status(404).JSON(fiber.Map{"error": "Audio not found"})
 		} else if err != nil {
-			log.Println("Redis fetch error:", err)
 			return c.Status(500).JSON(fiber.Map{"error": "Redis fetch error"})
 		}
 
-		log.Println("Streaming:", videoId, "Size:", len(audioData)/(1024*1024), "MB")
+		fileSize := int64(len(audioData))
+		rangeHeader := c.Get("Range")
+
+		if rangeHeader == "" {
+			// No range requested → send full file
+			c.Set("Content-Type", "audio/mpeg")
+			c.Set("Content-Length", fmt.Sprintf("%d", fileSize))
+			c.Set("Accept-Ranges", "bytes")
+			return c.Send(audioData)
+		}
+
+		// Parse Range header (e.g. "bytes=0-")
+		var start, end int64
+		_, err = fmt.Sscanf(rangeHeader, "bytes=%d-%d", &start, &end)
+		if err != nil || start < 0 {
+			start = 0
+		}
+		if end == 0 || end >= fileSize {
+			end = fileSize - 1
+		}
+
+		if start > end || start >= fileSize {
+			return c.Status(416).SendString("Requested Range Not Satisfiable")
+		}
+
+		chunk := audioData[start : end+1]
+
+		c.Status(fiber.StatusPartialContent) // 206
 		c.Set("Content-Type", "audio/mpeg")
-		return c.Send(audioData)
+		c.Set("Accept-Ranges", "bytes")
+		c.Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, end, fileSize))
+		c.Set("Content-Length", fmt.Sprintf("%d", len(chunk)))
+
+		return c.Send(chunk)
 	})
+
 	log.Fatal(app.Listen(":8001"))
 }

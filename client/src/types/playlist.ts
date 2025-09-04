@@ -47,6 +47,7 @@ export type TRACK = {
     // S_POPULARITY: number;
     // S_PREVIEW_URL: string;
 };
+
 export type PLAYLIST = {
     S_PID: string;
     S_NAME: string;

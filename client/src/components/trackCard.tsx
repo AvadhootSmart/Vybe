@@ -8,8 +8,9 @@ import TrackDropdown from "./trackDropdown";
 
 interface TrackCardProps {
   track: TRACK;
+  showDropdown?: boolean;
 }
-export const TrackCard = ({ track }: TrackCardProps) => {
+export const TrackCard = ({ track, showDropdown }: TrackCardProps) => {
   const spotifyUrl = `https://open.spotify.com/track/${track.S_TID}`;
   const youtubeUrl = `https://www.youtube.com/watch?v=${track.YT_DATA.YT_VIDEO_ID}`;
 
@@ -23,20 +24,20 @@ export const TrackCard = ({ track }: TrackCardProps) => {
       <div className="flex gap-2 items-center">
         {/* eslint-disable-next-line */}
         <img
-          src={track.S_ALBUM.images[0].url}
+          src={track.S_ALBUM.images[0].url || "/apple-touch-icon.png"}
           alt={track.S_NAME}
           className="size-12 sm:size-20 object-cover rounded-lg"
           width={100}
           height={100}
         />
         <div>
-          <h1 className="sm:text-xl text-sm">{track.S_NAME}</h1>
+          <h1 className="sm:text-xl text-sm">{track.S_NAME || track.YT_DATA.YT_TITLE}</h1>
           <h2 className="sm:text-lg text-xs text-zinc-400">
-            {track.S_ARTISTS[0].name}
+            {track.S_ARTISTS[0].name || "Artist name"}
           </h2>
         </div>
       </div>
-      {!isMobile && (
+      {!isMobile && showDropdown && (
         <div className="flex gap-2 items-center">
           <p>
             {`${Math.floor(track.S_DURATION_MS / 60000)}:${String(
@@ -67,7 +68,9 @@ export const TrackCard = ({ track }: TrackCardProps) => {
       {isMobile && (
         <div className="flex gap-2 items-center">
           <p>{formatDuration(track.S_DURATION_MS)}</p>
-          <TrackDropdown youtubeUrl={youtubeUrl} spotifyUrl={spotifyUrl} />
+          {showDropdown && (
+            <TrackDropdown youtubeUrl={youtubeUrl} spotifyUrl={spotifyUrl} />
+          )}
         </div>
       )}
     </div>

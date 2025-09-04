@@ -25,23 +25,18 @@ function Home() {
   const [selectedPlaylist, setSelectedPlaylist] = useState<string>("");
 
   useEffect(() => {
-    if (!document.cookie) {
-      console.log("No cookies found");
-      return;
-    }
-
-    const googleTokenCookie = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("googleAccessToken="));
+    // Read Spotify token from cookie (unchanged behavior)
     const spotifyTokenCookie = document.cookie
       .split("; ")
       .find((row) => row.startsWith("spotifyAccessToken="));
-
-    if (googleTokenCookie) {
-      setGoogleToken(googleTokenCookie.split("=")[1]);
-    }
     if (spotifyTokenCookie) {
       setSpotifyAccessToken(spotifyTokenCookie.split("=")[1]);
+    }
+
+    // Read Google token only from localStorage
+    const storedGoogleToken = localStorage.getItem("googleAccessToken");
+    if (storedGoogleToken) {
+      setGoogleToken(storedGoogleToken);
     }
   }, []);
 
@@ -117,7 +112,7 @@ function Home() {
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${googleToken}`,
+          ...(googleToken ? { Authorization: `Bearer ${googleToken}` } : {}),
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ trackName, artistName }),

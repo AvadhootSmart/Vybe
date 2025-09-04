@@ -58,7 +58,7 @@ export function PlaylistPopup({
                                     Transify Playlist
                                 </Button>
                                 <DialogClose>
-                                    <LucideX className="hover:scale-110 transition-all"/>
+                                    <LucideX className="hover:scale-110 transition-all" />
                                 </DialogClose>
                             </div>
                         </div>
@@ -67,7 +67,7 @@ export function PlaylistPopup({
                     <div className="max-h-[80vh] flex flex-col gap-4 overflow-y-auto">
                         {Playlists.find(
                             (pl) => pl.S_PID === selectedPlaylist,
-                        )?.S_TRACKS.slice().reverse().map((track: TRACK) => (
+                        )?.S_TRACKS.map((track: TRACK) => (
                             <div
                                 key={track.S_TID}
                                 className="flex items-center space-x-4 p-2 hover:bg-zinc-800 rounded"
