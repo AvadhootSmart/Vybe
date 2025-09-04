@@ -1,8 +1,8 @@
 'use client';
-import AudioPlayer from '@/components/audioPlayer';
+// import AudioPlayer from '@/components/audioPlayer';
 // import { TrackCard } from '@/components/trackCard';
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input'
 import YoutubePlayer from '@/components/youtubePlayer';
 import { YOUTUBE_DATA } from '@/types/youtubeData';
@@ -10,7 +10,7 @@ import { Plus, Loader2 } from 'lucide-react';
 import React, { useEffect, useState } from 'react'
 import { toast } from 'sonner';
 
-const page = () => {
+const ExplorePage = () => {
     const [query, setQuery] = useState("")
     const [googleToken, setGoogleToken] = useState("")
     const [results, setResults] = useState<YOUTUBE_DATA[]>([]);
@@ -22,8 +22,6 @@ const page = () => {
         const token = localStorage.getItem("googleAccessToken")
         if (token) setGoogleToken(token);
     }, [])
-
-
 
     const handleSearch = async () => {
         const response = await fetch(
@@ -143,4 +141,4 @@ const ResultsCard = ({ item, onAdd, isLoading }: { item: { YT_TITLE: string, YT_
     );
 }
 
-export default page
+export default ExplorePage
