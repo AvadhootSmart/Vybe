@@ -42,14 +42,15 @@ func main() {
 	app := fiber.New()
 	client := resty.New()
 
+	app.Use(logger.New())
+
+	var CLIENT_URL string = os.Getenv("CLIENT_URL")
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "http://localhost:3000",
+		AllowOrigins:     CLIENT_URL,
 		AllowMethods:     "GET,POST,PUT,DELETE,HEAD",
 		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
 		AllowCredentials: true,
 	}))
-
-	app.Use(logger.New())
 
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendString("Hello, World!")
@@ -342,12 +343,15 @@ func main() {
 			// Download audio using yt-dlp
 			videoURL := fmt.Sprintf("https://www.youtube.com/watch?v=%s", videoId)
 			cmd := exec.Command("yt-dlp", "-f", "bestaudio", "--extract-audio", "--audio-format", "mp3", "-o", "-", videoURL)
+			// cmd := exec.Command("/home/ubuntu/.local/bin/yt-dlp", "--cookies", "./tester-cookies.txt", "-f", "bestaudio", "--extract-audio", "--audio-format", "mp3", "-o", "-", videoURL)
 
-			var out bytes.Buffer
+			var out, stderr bytes.Buffer
 			cmd.Stdout = &out
+			cmd.Stderr = &stderr
 
 			if err := cmd.Run(); err != nil {
 				log.Printf("Failed to download %s: %v\n", videoURL, err)
+				log.Printf("Error output: %s\n", stderr.String())
 				continue
 			}
 
@@ -427,4 +431,5 @@ func main() {
 	})
 
 	log.Fatal(app.Listen(":8001"))
+	// log.Fatal(app.Listen(":8082"))
 }
