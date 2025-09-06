@@ -13,7 +13,6 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { motion as m } from "motion/react";
 import { YOUTUBE_DATA } from "@/types/youtubeData";
-import { TRACK } from "@/types/playlist";
 
 function Home() {
   const router = useRouter();
@@ -22,6 +21,7 @@ function Home() {
   const { Playlists, addPlaylistTracks } = usePlaylistStore();
 
   const [spotifyAccessToken, setSpotifyAccessToken] = useState<string>("");
+  //eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [googleToken, setGoogleToken] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedPlaylist, setSelectedPlaylist] = useState<string>("");
@@ -168,7 +168,7 @@ function Home() {
           (t) => t.S_NAME === track.S_NAME,
         );
         if (idx !== -1 && ytDataArray) {
-          return { ...track, YT_DATA: ytDataArray[idx] }; 
+          return { ...track, YT_DATA: ytDataArray[idx] };
         }
         return track; // already had YT_DATA
       });
