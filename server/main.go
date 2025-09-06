@@ -14,8 +14,6 @@ import (
 	"github.com/joho/godotenv"
 )
 
-const audioDir = "./songs"
-
 func main() {
 	err := godotenv.Load()
 	if err != nil {
@@ -42,7 +40,7 @@ func main() {
 	app.Post("/search", handlers.SingleSearch)
 	app.Post("/playlist/tracks/search", handlers.PlaylistTracksSearch)
 	app.Post("/transify", handlers.Transify)
-	app.Get("/stream/:videoID", handlers.SteamAudio)
+	app.Get("/stream/:videoID", handlers.StreamAudio)
 
 	// Run the server in a goroutine so we can catch shutdown signals
 	go func() {

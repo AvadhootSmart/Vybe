@@ -1,3 +1,6 @@
 /tmp
 .env
 go.sum
+/audio
+cookies.txt
+app

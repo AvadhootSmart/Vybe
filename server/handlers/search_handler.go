@@ -8,7 +8,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func SingleSearch(c  *fiber.Ctx) error {
+func SingleSearch(c *fiber.Ctx) error {
 	type Request struct {
 		Query string `json:"query"`
 	}
@@ -27,7 +27,7 @@ func SingleSearch(c  *fiber.Ctx) error {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch YouTube data"})
 	}
 
-	log.Printf("Response %s", response)
+	log.Printf("Response count: %d", len(response))
 
 	// Format Response
 	formattedYTResponse := make([]fiber.Map, len(response))

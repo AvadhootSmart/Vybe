@@ -5,65 +5,87 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"strconv"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/redis/go-redis/v9"
 )
 
-func SteamAudio(c *fiber.Ctx) error {
+func StreamAudio(c *fiber.Ctx) error {
 	videoId := c.Params("videoID")
 	ctx := context.Background()
 
-	exists, err := utils.RedisClient.Exists(ctx, "audio:"+videoId).Result()
+	// 1. Get cached file path from Redis
+	filePath, err := utils.RedisClient.Get(ctx, "audio:"+videoId).Result()
 	if err != nil {
 		log.Println("Redis error:", err)
-		return c.Status(500).JSON(fiber.Map{"error": "Redis error"})
-	}
-
-	if exists == 0 {
-		log.Println("Audio not found in cache:", videoId)
 		return c.Status(404).JSON(fiber.Map{"error": "Audio not found"})
 	}
 
-	audioData, err := utils.RedisClient.Get(ctx, "audio:"+videoId).Bytes()
-	if err == redis.Nil {
-		return c.Status(404).JSON(fiber.Map{"error": "Audio not found"})
-	} else if err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": "Redis fetch error"})
+	// 2. Check file exists on disk
+	file, err := os.Open(filePath)
+	if err != nil {
+		log.Printf("File not found on disk: %s\n", filePath)
+		return c.Status(404).JSON(fiber.Map{"error": "Audio file missing"})
 	}
+	defer file.Close()
 
-	fileSize := int64(len(audioData))
+	// 3. Get file size
+	stat, err := file.Stat()
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"error": "Failed to stat file"})
+	}
+	fileSize := stat.Size()
+
 	rangeHeader := c.Get("Range")
-
 	if rangeHeader == "" {
-		// No range requested → send full file
+		// No range → send full file
 		c.Set("Content-Type", "audio/mpeg")
-		c.Set("Content-Length", fmt.Sprintf("%d", fileSize))
+		c.Set("Content-Length", strconv.FormatInt(fileSize, 10))
 		c.Set("Accept-Ranges", "bytes")
-		return c.Send(audioData)
+		return c.SendFile(filePath, true)
 	}
 
-	// Parse Range header (e.g. "bytes=0-")
+	// 4. Parse Range header (e.g. "bytes=0-")
 	var start, end int64
-	_, err = fmt.Sscanf(rangeHeader, "bytes=%d-%d", &start, &end)
-	if err != nil || start < 0 {
-		start = 0
-	}
-	if end == 0 || end >= fileSize {
-		end = fileSize - 1
+	start, end = 0, fileSize-1
+
+	if strings.HasPrefix(rangeHeader, "bytes=") {
+		parts := strings.Split(strings.TrimPrefix(rangeHeader, "bytes="), "-")
+		if len(parts) == 2 {
+			if parts[0] != "" {
+				if s, err := strconv.ParseInt(parts[0], 10, 64); err == nil {
+					start = s
+				}
+			}
+			if parts[1] != "" {
+				if e, err := strconv.ParseInt(parts[1], 10, 64); err == nil {
+					end = e
+				}
+			}
+		}
 	}
 
 	if start > end || start >= fileSize {
 		return c.Status(416).SendString("Requested Range Not Satisfiable")
 	}
 
-	chunk := audioData[start : end+1]
+	chunkSize := end - start + 1
+	buffer := make([]byte, chunkSize)
 
-	c.Status(fiber.StatusPartialContent) // 206
+	_, err = file.ReadAt(buffer, start)
+	if err != nil {
+		log.Println("File read error:", err)
+		return c.Status(500).JSON(fiber.Map{"error": "File read error"})
+	}
+
+	// 5. Set headers for partial content
+	c.Status(fiber.StatusPartialContent)
 	c.Set("Content-Type", "audio/mpeg")
 	c.Set("Accept-Ranges", "bytes")
 	c.Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, end, fileSize))
-	c.Set("Content-Length", fmt.Sprintf("%d", len(chunk)))
+	c.Set("Content-Length", strconv.FormatInt(chunkSize, 10))
 
-	return c.Send(chunk)
+	return c.Send(buffer)
 }

@@ -1,71 +1,121 @@
 package handlers
 
 import (
-	"Vybe/utils"
 	"bytes"
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"sync"
 	"time"
+
+	"Vybe/utils"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-
 func Transify(c *fiber.Ctx) error {
-		type Request struct {
-			VideoIDs []string `json:"videoIds"`
-		}
+	type Request struct {
+		VideoIDs []string `json:"videoIds"`
+	}
 
-		req := new(Request)
-		if err := c.BodyParser(req); err != nil {
-			log.Println("Error parsing request body:", err)
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Failed to parse request body"})
-		}
+	req := new(Request)
+	if err := c.BodyParser(req); err != nil {
+		log.Println("Error parsing request body:", err)
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Failed to parse request body"})
+	}
 
-		ctx := context.Background()
+	log.Printf("Transify called with %d video IDs: %v", len(req.VideoIDs), req.VideoIDs)
+	ctx := context.Background()
 
-		for _, videoId := range req.VideoIDs {
-			cacheKey := "audio:" + videoId
+	cacheDir := "./audio"
+	if err := os.MkdirAll(cacheDir, 0755); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Cache directory error"})
+	}
 
-			// Check if audio already exists in cache
-			cachedAudio, err := utils.RedisClient.Get(ctx, cacheKey).Bytes()
-			if err == nil && len(cachedAudio) > 0 {
-				log.Printf("Cache hit: %s (size: %d MBs)\n", videoId, len(cachedAudio)/(1024*1024))
-				continue // Skip downloading since it's already cached
-			} else {
-				log.Printf("Cache miss: %s. Downloading...\n", videoId)
+	cachedFiles := make(map[string]string)
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+
+	for _, videoId := range req.VideoIDs {
+		wg.Add(1)
+		go func(videoId string) {
+			defer wg.Done()
+
+			finalPath := downloadVideo(ctx, videoId, cacheDir)
+			if finalPath != "" {
+				mu.Lock()
+				cachedFiles[videoId] = finalPath
+				mu.Unlock()
 			}
+		}(videoId)
+	}
 
-			// Download audio using yt-dlp
-			videoURL := fmt.Sprintf("https://www.youtube.com/watch?v=%s", videoId)
-			// cmd := exec.Command("yt-dlp", "-f", "bestaudio", "--extract-audio", "--audio-format", "mp3", "-o", "-", videoURL)
-			// cmd := exec.Command("/home/ubuntu/.local/bin/yt-dlp", "--cookies", "./tester-cookies.txt", "-f", "bestaudio", "--extract-audio", "--audio-format", "mp3", "-o", "-", videoURL)
+	wg.Wait()
 
-			cmd := exec.Command("yt-dlp", "--cookies", "./cookies.txt", "-f", "bestaudio", "--extract-audio", "--geo-bypass", "--audio-format", "mp3", "-o", "-", videoURL)
-			var out, stderr bytes.Buffer
-			cmd.Stdout = &out
-			cmd.Stderr = &stderr
+	log.Printf("Transify completed. Cached %d files: %v", len(cachedFiles), cachedFiles)
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"cached": cachedFiles,
+	})
+}
 
-			if err := cmd.Run(); err != nil {
-				log.Printf("Failed to download %s: %v\n", videoURL, err)
-				log.Printf("Error output: %s\n", stderr.String())
-				continue
-			}
+//handles Redis caching and yt-dlp download
+func downloadVideo(ctx context.Context, videoId, cacheDir string) string {
+	cacheKey := "audio:" + videoId
 
-			audioBytes := out.Bytes()
-			log.Printf("Downloaded audio for %s: %d bytes\n", videoId, len(audioBytes))
-
-			// Store audio in Redis
-			err = utils.RedisClient.Set(ctx, cacheKey, audioBytes, 6*time.Hour).Err()
-			if err != nil {
-				log.Println("Error caching audio:", err)
-				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to cache audio"})
-			}
-
-			log.Println("Cached:", videoURL)
+	// Step 1: Check Redis
+	cachedPath, err := utils.RedisClient.Get(ctx, cacheKey).Result()
+	if err == nil && cachedPath != "" {
+		if _, statErr := os.Stat(cachedPath); statErr == nil {
+			log.Printf("Cache hit: %s at %s", videoId, cachedPath)
+			return cachedPath
 		}
+		log.Printf("Cache miss: file not found on disk for %s at %s", videoId, cachedPath)
+	} else {
+		log.Printf("Cache miss: no cached path for %s", videoId)
+	}
 
-		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Playlist cached successfully"})
+	// Step 2: Download using yt-dlp
+	outputPath := filepath.Join(cacheDir, fmt.Sprintf("%s.%%(ext)s", videoId))
+	videoURL := fmt.Sprintf("https://www.youtube.com/watch?v=%s", videoId)
+	cookiesPath := "../cookies.txt" // adjust if needed
+
+	cmd := exec.Command("yt-dlp",
+		"--cookies", cookiesPath,
+		"-f", "bestaudio[ext=m4a]", // use original format for speed
+		// "--audio-format", "copy",    // skip conversion
+		"--no-warnings",
+		"--no-progress",
+		"--quiet",
+		"-o", outputPath,
+		videoURL,
+	)
+
+	var stderr bytes.Buffer
+	cmd.Stdout = nil
+	cmd.Stderr = &stderr
+	cmd.Stdin = nil
+
+	if err := cmd.Run(); err != nil {
+		log.Printf("yt-dlp failed for %s: %v", videoURL, stderr.String())
+		return ""
+	}
+
+	finalPath := filepath.Join(cacheDir, fmt.Sprintf("%s.m4a", videoId))
+	if _, err := os.Stat(finalPath); err != nil {
+		log.Printf("Download failed: file not found at %s", finalPath)
+		return ""
+	}
+
+	// Step 3: Save path in Redis
+	if err := utils.RedisClient.Set(ctx, cacheKey, finalPath, 6*time.Hour).Err(); err != nil {
+		log.Printf("Redis cache set failed: %v", err)
+	} else {
+		log.Printf("Cached path in Redis: %s -> %s", cacheKey, finalPath)
+	}
+
+	log.Printf("Downloaded %s → %s", videoId, finalPath)
+	return finalPath
 }

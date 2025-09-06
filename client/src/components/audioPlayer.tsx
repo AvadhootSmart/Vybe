@@ -157,6 +157,7 @@ const AudioPlayer = ({
       {/* Hidden Audio Element */}
       <audio
         ref={audioRef}
+        autoPlay
         onEnded={playNext}
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
