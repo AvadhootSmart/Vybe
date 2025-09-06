@@ -25,7 +25,7 @@ const ExplorePage = () => {
 
     const handleSearch = async () => {
         const response = await fetch(
-            `${process.env.NEXT_PUBLIC_BACKEND_URL}/explore/search`,
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/search`,
             {
                 method: "POST",
                 headers: {

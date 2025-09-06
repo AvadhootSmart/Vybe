@@ -100,7 +100,6 @@ app.get(
     scope: [
       "user-read-email",
       "user-read-private",
-      "streaming",
       "playlist-read-private",
     ],
     showDialog: true,
@@ -127,7 +126,7 @@ app.get(
 app.get(
   "/auth/google",
   passport.authenticate("google", {
-    scope: ["profile", "email", "https://www.googleapis.com/auth/youtube.readonly"],
+    scope: ["profile", "email"],
   }),
 );
 

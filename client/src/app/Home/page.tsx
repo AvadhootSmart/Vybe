@@ -12,6 +12,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { motion as m } from "motion/react";
+import { YOUTUBE_DATA } from "@/types/youtubeData";
+import { TRACK } from "@/types/playlist";
 
 function Home() {
   const router = useRouter();
@@ -44,7 +46,6 @@ function Home() {
     const { storePlaylists, Playlists } = usePlaylistStore.getState();
 
     try {
-
       if (Playlists.length > 0) {
         // toast.message("Playlist already exists, fetching from store");
         return;
@@ -55,7 +56,7 @@ function Home() {
           headers: {
             Authorization: `Bearer ${spotifyAccessToken}`,
           },
-        }
+        },
       );
       if (!response.ok) {
         throw new Error("Failed to fetch playlists");
@@ -91,7 +92,7 @@ function Home() {
           headers: {
             Authorization: `Bearer ${spotifyAccessToken}`,
           },
-        }
+        },
       );
 
       const data = await response.json();
@@ -103,35 +104,26 @@ function Home() {
     }
   };
 
-  async function getYoutubeVideoId(
-    trackName: string,
-    artistName: string
-  ): Promise<{ YT_TITLE: string; YT_VIDEO_ID: string }> {
+  async function getPlaylistYTData(
+    tracks: string[],
+  ): Promise<{ data: YOUTUBE_DATA[] } | undefined> {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_BACKEND_URL}/youtube/search`,
+      `${process.env.NEXT_PUBLIC_BACKEND_URL}/playlist/tracks/search`,
       {
         method: "POST",
         headers: {
-          ...(googleToken ? { Authorization: `Bearer ${googleToken}` } : {}),
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ trackName, artistName }),
-      }
+        body: JSON.stringify({ tracks }),
+      },
     );
     const data = await response.json();
 
     if (data.length === 0) {
       toast.error("No YouTube video found for this track");
-      return {
-        YT_TITLE: "",
-        YT_VIDEO_ID: "",
-      };
+      return;
     }
-
-    return {
-      YT_TITLE: data[0].YT_TITLE,
-      YT_VIDEO_ID: data[0].YT_VIDEO_ID,
-    };
+    return data;
   }
 
   async function transifyPlaylist() {
@@ -145,42 +137,46 @@ function Home() {
 
     const playlistTracks = playlist.S_TRACKS || [];
 
-    // Check if all tracks already have YT_DATA
-    const allTracksTransified = playlistTracks.every((track) => track.YT_DATA);
-
-    if (allTracksTransified) {
+    // Skip if all tracks already have YT_DATA
+    if (playlistTracks.every((track) => track.YT_DATA)) {
       toast.success("Playlist Already Transified");
       router.push(`/Playlist/${selectedPlaylist}`);
       return;
     }
 
-    // Filter tracks that need YouTube data
+    // Tracks needing update
     const tracksNeedingUpdate = playlistTracks.filter(
-      (track) => !track.YT_DATA
+      (track) => !track.YT_DATA,
     );
 
     try {
-      const fetchedData = await Promise.all(
-        tracksNeedingUpdate.map(async (track) => {
-          const videoData = await getYoutubeVideoId(
-            track.S_NAME,
-            track.S_ARTISTS[0].name
-          );
-          return { ...track, YT_DATA: videoData };
-        })
-      );
+      // Build request payload
+      const payload = {
+        tracks: tracksNeedingUpdate.map(
+          (track) => `${track.S_NAME}, ${track.S_ARTISTS[0].name}`,
+        ),
+      };
 
-      // Merge updated tracks with the existing ones
+      // Send batch request
+      const response = await getPlaylistYTData(payload.tracks);
+      // response.data = flat array, same order as payload.tracks
+      const ytDataArray = response?.data;
+
+      // Map results back to tracksNeedingUpdate
       const updatedTracks = playlistTracks.map((track) => {
-        const updatedTrack = fetchedData.find((t) => t.S_NAME === track.S_NAME);
-        return updatedTrack || track;
+        const idx = tracksNeedingUpdate.findIndex(
+          (t) => t.S_NAME === track.S_NAME,
+        );
+        if (idx !== -1 && ytDataArray) {
+          return { ...track, YT_DATA: ytDataArray[idx] }; 
+        }
+        return track; // already had YT_DATA
       });
 
-      // console.log("playlistStore-updateTracks", updatedTracks);
       updateTracks(updatedTracks, selectedPlaylist);
       toast.success("Playlist Transified");
-    } catch (error) {
-      console.error("Error transifying playlist:", error);
+    } catch (err) {
+      console.error("Error transifying playlist:", err);
       toast.error("Failed to transify playlist");
     }
 
@@ -226,20 +222,6 @@ function Home() {
       filter: "blur(10px)",
     },
   };
-
-  // const searchParams = useSearchParams();
-
-  // useEffect(() => {
-  //     if (searchParams.get("error") === "true") {
-  //         toast.error(
-  //             "Something went wrong while transifying playlist, Clear Cache and try again later",
-  //         );
-
-  //         const newParams = new URLSearchParams(searchParams.toString());
-  //         newParams.delete("error");
-  //         router.replace(`/?${newParams.toString()}`, { scroll: false });
-  //     }
-  // }, [searchParams, router]);
 
   return (
     <div className="bg-neutral-950 w-full min-h-screen text-white p-4 lg:px-[10%] font-Poppins">
