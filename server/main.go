@@ -1,47 +1,28 @@
 package main
 
 import (
-	// "bytes"
-	"bytes"
-	"context"
-	"encoding/json"
-	"fmt"
+	"Vybe/handlers"
+	"Vybe/utils"
 	"log"
-	"net/url"
 	"os"
-	"os/exec"
-	"time"
+	"os/signal"
+	"syscall"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/joho/godotenv"
-	"github.com/redis/go-redis/v9"
 )
-
-// Super crappy code, I know, cleaning chores will be done on initial release
 
 const audioDir = "./songs"
 
-var redisClient = redis.NewClient(&redis.Options{
-	Addr:     "localhost:6379",
-	Password: "",
-	DB:       0,
-})
-
 func main() {
-
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
-	YOUTUBE_API_KEY := os.Getenv("YOUTUBE_API_KEY")
-
 	app := fiber.New()
-	client := resty.New()
-
 	app.Use(logger.New())
 
 	var CLIENT_URL string = os.Getenv("CLIENT_URL")
@@ -53,383 +34,38 @@ func main() {
 	}))
 
 	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("Hello, World!")
+		return c.SendString("Server Running 🚀")
 	})
 
-	app.Get("/spotify/playlists", func(c *fiber.Ctx) error {
-		// Extract Authorization header
-		authHeader := c.Get("Authorization")
-		// log.Println(authHeader)
-		if authHeader == "" {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "No access token provided"})
+	app.Get("/spotify/playlists", handlers.GetAllPlaylists)
+	app.Get("/spotify/playlist/:PID", handlers.GetPlaylistTracks)
+	app.Post("/search", handlers.SingleSearch)
+	app.Post("/playlist/tracks/search", handlers.PlaylistTracksSearch)
+	app.Post("/transify", handlers.Transify)
+	app.Get("/stream/:videoID", handlers.SteamAudio)
+
+	// Run the server in a goroutine so we can catch shutdown signals
+	go func() {
+		if err := app.Listen(":8001"); err != nil {
+			log.Printf("Server stopped: %v", err)
 		}
+	}()
 
-		// Make request to Spotify API
-		resp, err := client.R().
-			SetHeader("Authorization", authHeader).
-			Get("https://api.spotify.com/v1/me/playlists")
+	// Graceful shutdown handling
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	<-quit // wait here until Ctrl+C or container stop
 
-		if err != nil {
-			log.Fatalf("Error fetching playlists:", err)
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch playlists"})
-		}
+	log.Println("Shutting down server...")
 
-		// Parse response
-		var result struct {
-			Items []struct {
-				Name   string `json:"name"`
-				PID    string `json:"id"`
-				Images []struct {
-					Height int    `json:"height"`
-					Width  int    `json:"width"`
-					URL    string `json:"url"`
-				} `json:"images"`
-				TracksLinks struct {
-					Href  string `json:"href"`
-					Total int    `json:"total"`
-				} `json:"tracks"`
-			} `json:"items"`
-		}
+	// Close Redis client
+	if err := utils.RedisClient.Close(); err != nil {
+		log.Printf("Error closing Redis: %v", err)
+	}
 
-		if err := json.Unmarshal(resp.Body(), &result); err != nil {
-			log.Println("Error parsing response:", err)
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to parse playlists"})
-		}
+	if err := app.Shutdown(); err != nil {
+		log.Printf("Error shutting down Fiber: %v", err)
+	}
 
-		// Format response
-		formattedPlaylists := make([]fiber.Map, len(result.Items))
-		for i, playlist := range result.Items {
-			formattedPlaylists[i] = fiber.Map{
-				"S_NAME":         playlist.Name,
-				"S_PID":          playlist.PID,
-				"S_IMAGES":       playlist.Images,
-				"S_TRACKS_LINKS": playlist.TracksLinks,
-			}
-		}
-
-		return c.JSON(formattedPlaylists)
-	})
-
-	//Get playlist's Tracks
-	app.Get("/spotify/playlist/:PID", func(c *fiber.Ctx) error {
-		PID := c.Params("PID")
-		authHeader := c.Get("Authorization")
-
-		if authHeader == "" {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
-		}
-
-		reqUrl := fmt.Sprintf("https://api.spotify.com/v1/playlists/%s/tracks", PID)
-		resp, err := client.R().
-			SetHeader("Authorization", authHeader).
-			Get(reqUrl)
-
-		if err != nil {
-			log.Fatalf("Error fetching playlist's tracks:", err)
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch playlist's tracks"})
-		}
-
-		var result struct {
-			Items []struct {
-				Track struct {
-					ID          string      `json:"id"`
-					Name        string      `json:"name"`
-					Artists     interface{} `json:"artists"`
-					Album       interface{} `json:"album"`
-					DurationMS  int         `json:"duration_ms"`
-					TrackNumber int         `json:"track_number"`
-				} `json:"track"`
-			} `json:"items"`
-		}
-
-		if err := json.Unmarshal(resp.Body(), &result); err != nil {
-			log.Println("Error parsing response:", err)
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to parse playlist's tracks"})
-		}
-
-		formattedTracks := make([]fiber.Map, len(result.Items))
-		for i, track := range result.Items {
-			formattedTracks[i] = fiber.Map{
-				"S_TID":          track.Track.ID,
-				"S_NAME":         track.Track.Name,
-				"S_ARTISTS":      track.Track.Artists,
-				"S_ALBUM":        track.Track.Album,
-				"S_DURATION_MS":  track.Track.DurationMS,
-				"S_TRACK_NUMBER": track.Track.TrackNumber,
-			}
-		}
-
-		if len(formattedTracks) == 0 {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "No tracks found"})
-		}
-
-		return c.JSON(formattedTracks)
-	})
-
-	app.Post("/explore/search", func(c *fiber.Ctx) error {
-		type Request struct {
-			Query string `json:"query"`
-		}
-
-		rq := new(Request)
-		if err := c.BodyParser(rq); err != nil {
-			log.Println("Error parsing request body:", err)
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request format"})
-		}
-
-		query := url.QueryEscape(rq.Query)
-
-		authHeader := c.Get("Authorization")
-		var reqUrl string
-		req := client.R().SetHeader("Content-Type", "application/json")
-		if authHeader != "" {
-			// Use Bearer token
-			req.SetHeader("Authorization", authHeader)
-			reqUrl = fmt.Sprintf(
-				"https://youtube.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=5&q=%s",
-				query,
-			)
-		} else {
-			// Use API key
-
-			log.Println("Using API_KEY for the request")
-			reqUrl = fmt.Sprintf(
-				"https://youtube.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=2&q=%s&key=%s",
-				query, YOUTUBE_API_KEY,
-			)
-		}
-
-		resp, err := req.Get(reqUrl)
-		if err != nil {
-			log.Println("Error fetching YouTube search results:", err)
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch YouTube data"})
-		}
-
-		// Check HTTP status code
-		if resp.StatusCode() != 200 {
-			log.Println("YouTube API error:", resp.Status(), string(resp.Body()))
-			return c.Status(resp.StatusCode()).JSON(fiber.Map{"error": "YouTube API error"})
-		}
-
-		// Parse YouTube response
-		var result struct {
-			Items []struct {
-				ID struct {
-					VideoID string `json:"videoId"`
-				} `json:"id"`
-				Snippet struct {
-					Title string `json:"title"`
-				} `json:"snippet"`
-			} `json:"items"`
-		}
-
-		if err := json.Unmarshal(resp.Body(), &result); err != nil {
-			log.Println("Error parsing YouTube response:", err)
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to parse YouTube response"})
-		}
-
-		// Format Response
-		formattedYTResponse := make([]fiber.Map, len(result.Items))
-		for i, item := range result.Items {
-			formattedYTResponse[i] = fiber.Map{
-				"YT_VIDEO_ID": item.ID.VideoID,
-				"YT_TITLE":    item.Snippet.Title,
-			}
-		}
-
-		return c.JSON(formattedYTResponse)
-	})
-
-	app.Post("/youtube/search", func(c *fiber.Ctx) error {
-		type SearchRequest struct {
-			TrackName  string `json:"trackName"`
-			ArtistName string `json:"artistName"`
-		}
-
-		sq := new(SearchRequest)
-		if err := c.BodyParser(sq); err != nil {
-			log.Println("Error parsing request body:", err)
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request format"})
-		}
-
-		trackName := url.QueryEscape(sq.TrackName)
-		artistName := url.QueryEscape(sq.ArtistName)
-
-		authHeader := c.Get("Authorization")
-		var reqUrl string
-		req := client.R().SetHeader("Content-Type", "application/json")
-		if authHeader != "" {
-			// Use Bearer token
-			req.SetHeader("Authorization", authHeader)
-			reqUrl = fmt.Sprintf(
-				"https://youtube.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=2&q=%s+%s",
-				trackName, artistName,
-			)
-		} else {
-			// Use API key
-
-			log.Println("Using API key for request")
-			reqUrl = fmt.Sprintf(
-				"https://youtube.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=2&q=%s+%s&key=%s",
-				trackName, artistName, YOUTUBE_API_KEY,
-			)
-		}
-
-		resp, err := req.Get(reqUrl)
-		if err != nil {
-			log.Println("Error fetching YouTube search results:", err)
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch YouTube data"})
-		}
-
-		// Check HTTP status code
-		if resp.StatusCode() != 200 {
-			log.Println("YouTube API error:", resp.Status(), string(resp.Body()))
-			return c.Status(resp.StatusCode()).JSON(fiber.Map{"error": "YouTube API error"})
-		}
-
-		// Parse YouTube response
-		var result struct {
-			Items []struct {
-				ID struct {
-					VideoID string `json:"videoId"`
-				} `json:"id"`
-				Snippet struct {
-					Title string `json:"title"`
-				} `json:"snippet"`
-			} `json:"items"`
-		}
-
-		if err := json.Unmarshal(resp.Body(), &result); err != nil {
-			log.Println("Error parsing YouTube response:", err)
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to parse YouTube response"})
-		}
-
-		// Format Response
-		formattedYTResponse := make([]fiber.Map, len(result.Items))
-		for i, item := range result.Items {
-			formattedYTResponse[i] = fiber.Map{
-				"YT_VIDEO_ID": item.ID.VideoID,
-				"YT_TITLE":    item.Snippet.Title,
-			}
-		}
-
-		return c.JSON(formattedYTResponse)
-	})
-	app.Post("/transify", func(c *fiber.Ctx) error {
-		type Request struct {
-			VideoIDs []string `json:"videoIds"`
-		}
-
-		req := new(Request)
-		if err := c.BodyParser(req); err != nil {
-			log.Println("Error parsing request body:", err)
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Failed to parse request body"})
-		}
-
-		ctx := context.Background()
-
-		for _, videoId := range req.VideoIDs {
-			cacheKey := "audio:" + videoId
-
-			// Check if audio already exists in cache
-			cachedAudio, err := redisClient.Get(ctx, cacheKey).Bytes()
-			if err == nil && len(cachedAudio) > 0 {
-				log.Printf("Cache hit: %s (size: %d MBs)\n", videoId, len(cachedAudio)/(1024*1024))
-				continue // Skip downloading since it's already cached
-			} else {
-				log.Printf("Cache miss: %s. Downloading...\n", videoId)
-			}
-
-			// Download audio using yt-dlp
-			videoURL := fmt.Sprintf("https://www.youtube.com/watch?v=%s", videoId)
-			cmd := exec.Command("yt-dlp", "-f", "bestaudio", "--extract-audio", "--audio-format", "mp3", "-o", "-", videoURL)
-			// cmd := exec.Command("/home/ubuntu/.local/bin/yt-dlp", "--cookies", "./tester-cookies.txt", "-f", "bestaudio", "--extract-audio", "--audio-format", "mp3", "-o", "-", videoURL)
-
-			var out, stderr bytes.Buffer
-			cmd.Stdout = &out
-			cmd.Stderr = &stderr
-
-			if err := cmd.Run(); err != nil {
-				log.Printf("Failed to download %s: %v\n", videoURL, err)
-				log.Printf("Error output: %s\n", stderr.String())
-				continue
-			}
-
-			audioBytes := out.Bytes()
-			log.Printf("Downloaded audio for %s: %d bytes\n", videoId, len(audioBytes))
-
-			// Store audio in Redis
-			err = redisClient.Set(ctx, cacheKey, audioBytes, 6*time.Hour).Err()
-			if err != nil {
-				log.Println("Error caching audio:", err)
-				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to cache audio"})
-			}
-
-			log.Println("Cached:", videoURL)
-		}
-
-		return c.Status(fiber.StatusOK).JSON(fiber.Map{"message": "Playlist cached successfully"})
-	})
-
-	//Streaming from redis cache
-	app.Get("/stream/:videoID", func(c *fiber.Ctx) error {
-		videoId := c.Params("videoID")
-		ctx := context.Background()
-
-		exists, err := redisClient.Exists(ctx, "audio:"+videoId).Result()
-		if err != nil {
-			log.Println("Redis error:", err)
-			return c.Status(500).JSON(fiber.Map{"error": "Redis error"})
-		}
-
-		if exists == 0 {
-			log.Println("Audio not found in cache:", videoId)
-			return c.Status(404).JSON(fiber.Map{"error": "Audio not found"})
-		}
-
-		audioData, err := redisClient.Get(ctx, "audio:"+videoId).Bytes()
-		if err == redis.Nil {
-			return c.Status(404).JSON(fiber.Map{"error": "Audio not found"})
-		} else if err != nil {
-			return c.Status(500).JSON(fiber.Map{"error": "Redis fetch error"})
-		}
-
-		fileSize := int64(len(audioData))
-		rangeHeader := c.Get("Range")
-
-		if rangeHeader == "" {
-			// No range requested → send full file
-			c.Set("Content-Type", "audio/mpeg")
-			c.Set("Content-Length", fmt.Sprintf("%d", fileSize))
-			c.Set("Accept-Ranges", "bytes")
-			return c.Send(audioData)
-		}
-
-		// Parse Range header (e.g. "bytes=0-")
-		var start, end int64
-		_, err = fmt.Sscanf(rangeHeader, "bytes=%d-%d", &start, &end)
-		if err != nil || start < 0 {
-			start = 0
-		}
-		if end == 0 || end >= fileSize {
-			end = fileSize - 1
-		}
-
-		if start > end || start >= fileSize {
-			return c.Status(416).SendString("Requested Range Not Satisfiable")
-		}
-
-		chunk := audioData[start : end+1]
-
-		c.Status(fiber.StatusPartialContent) // 206
-		c.Set("Content-Type", "audio/mpeg")
-		c.Set("Accept-Ranges", "bytes")
-		c.Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", start, end, fileSize))
-		c.Set("Content-Length", fmt.Sprintf("%d", len(chunk)))
-
-		return c.Send(chunk)
-	})
-
-	log.Fatal(app.Listen(":8001"))
-	// log.Fatal(app.Listen(":8082"))
+	log.Println("Server exited cleanly ✅")
 }
