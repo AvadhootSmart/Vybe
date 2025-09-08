@@ -111,6 +111,7 @@ func main() {
 		}
 	}))
 
+	app.Get("/me", handlers.GetUserData)
 	app.Get("/spotify/playlists", handlers.GetAllPlaylists)
 	app.Get("/spotify/playlist/:PID", handlers.GetPlaylistTracks)
 	app.Post("/search", handlers.SingleSearch)
