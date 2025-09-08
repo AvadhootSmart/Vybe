@@ -26,6 +26,7 @@ function Home() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedPlaylist, setSelectedPlaylist] = useState<string>("");
 
+
   useEffect(() => {
     // Read Spotify token from cookie (unchanged behavior)
     const spotifyTokenCookie = document.cookie
@@ -40,6 +41,7 @@ function Home() {
     if (storedGoogleToken) {
       setGoogleToken(storedGoogleToken);
     }
+
   }, []);
 
   const fetchPlaylists = async () => {

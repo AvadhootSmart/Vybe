@@ -1,5 +1,8 @@
 "use client";
 import { useRef, useEffect, useState } from "react";
+import { Button } from "./button";
+import { YOUTUBE_DATA } from "@/types/youtubeData";
+import { SearchPopup } from "../searchPopup";
 
 const RoomPlayer = ({
   roomID,
@@ -10,13 +13,29 @@ const RoomPlayer = ({
 }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
-  const [currentSong, setCurrentSong] = useState<string>("GlvAH57aSpA");
+  const [currentSongIdx, setCurrentSongIdx] = useState<number>(0);
   //eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [songQueue, setSongQueue] = useState<string[]>([
-    "GlvAH57aSpA",
-    "iGyrWNa2Ico",
-    "emK-dkaGokM",
-    "5Dn-_UzLmbM",
+  const [songQueue, setSongQueue] = useState<YOUTUBE_DATA[]>([
+    {
+      YT_TITLE: "Waiting",
+      YT_VIDEO_ID: "GlvAH57aSpA",
+    },
+    {
+      YT_TITLE: "Sleepless Nights",
+      YT_VIDEO_ID: "iGyrWNa2Ico",
+    },
+    {
+      YT_TITLE: "Your boyfriend's Car",
+      YT_VIDEO_ID: "emK-dkaGokM",
+    },
+    {
+      YT_TITLE: "Faith",
+      YT_VIDEO_ID: "5Dn-_UzLmbM",
+    },
+    {
+      YT_TITLE: "Better Now - Caslow Remix",
+      YT_VIDEO_ID: "nvKklOc3Rtk ",
+    },
   ]);
 
   // Connect WebSocket
@@ -44,7 +63,9 @@ const RoomPlayer = ({
           if (data.songID) {
             const audioSrc = `${process.env.NEXT_PUBLIC_BACKEND_URL}/stream/${data.songID}`;
             audioRef.current.src = audioSrc;
-            setCurrentSong(data.songID);
+            setCurrentSongIdx(
+              songQueue.findIndex((song) => song.YT_VIDEO_ID === data.songID),
+            );
           }
           audioRef.current.play();
           break;
@@ -58,7 +79,9 @@ const RoomPlayer = ({
           if (data.songID) {
             const audioSrc = `${process.env.NEXT_PUBLIC_BACKEND_URL}/stream/${data.songID}`;
             audioRef.current.src = audioSrc;
-            setCurrentSong(data.songID);
+            setCurrentSongIdx(
+              songQueue.findIndex((song) => song.YT_VIDEO_ID === data.songID),
+            );
             audioRef.current.play();
           }
           break;
@@ -69,14 +92,17 @@ const RoomPlayer = ({
       }
     };
 
-    return () => ws.close();
+    return () => {
+      ws.close();
+      wsRef.current = null;
+    };
   }, [roomID, isHost]);
 
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = 0.25;
     }
-  }, [currentSong]);
+  }, [currentSongIdx]);
 
   // send events (only host)
   const sendEvent = (type: string, songID?: string) => {
@@ -87,48 +113,64 @@ const RoomPlayer = ({
 
   // host controls
   const handleNext = () => {
-    const currentIndex = songQueue.indexOf(currentSong);
-    const nextIndex = (currentIndex + 1) % songQueue.length;
+    const nextIndex = (currentSongIdx + 1) % songQueue.length;
     const nextSong = songQueue[nextIndex];
-    setCurrentSong(nextSong);
+    setCurrentSongIdx(nextIndex);
     if (audioRef.current) {
-      audioRef.current.src = `${process.env.NEXT_PUBLIC_BACKEND_URL}/stream/${nextSong}`;
+      audioRef.current.src = `${process.env.NEXT_PUBLIC_BACKEND_URL}/stream/${nextSong.YT_VIDEO_ID}`;
       audioRef.current.play();
     }
-    sendEvent("play", nextSong);
+    sendEvent("play", nextSong.YT_VIDEO_ID);
   };
 
   const handlePrevious = () => {
-    const currentIndex = songQueue.indexOf(currentSong);
-    const prevIndex = (currentIndex - 1 + songQueue.length) % songQueue.length;
+    const prevIndex =
+      (currentSongIdx - 1 + songQueue.length) % songQueue.length;
     const prevSong = songQueue[prevIndex];
-    setCurrentSong(prevSong);
+    setCurrentSongIdx(prevIndex);
     if (audioRef.current) {
-      audioRef.current.src = `${process.env.NEXT_PUBLIC_BACKEND_URL}/stream/${prevSong}`;
+      audioRef.current.src = `${process.env.NEXT_PUBLIC_BACKEND_URL}/stream/${prevSong.YT_VIDEO_ID}`;
       audioRef.current.play();
     }
-    sendEvent("play", prevSong);
+    sendEvent("play", prevSong.YT_VIDEO_ID);
   };
 
   return (
     <div>
       <audio ref={audioRef} controls onEnded={handleNext} />
-      {isHost && currentSong && (
-        <div>
-          <button onClick={() => sendEvent("play", currentSong)}>Play</button>
-          <button onClick={() => sendEvent("pause", currentSong)}>Pause</button>
-          <button onClick={handlePrevious}>Previous</button>
-          <button onClick={handleNext}>Next</button>
+      {isHost && (
+        <div className="space-x-2">
+          <Button
+            onClick={() =>
+              sendEvent("play", songQueue[currentSongIdx].YT_VIDEO_ID)
+            }
+          >
+            Play
+          </Button>
+          <Button
+            onClick={() =>
+              sendEvent("pause", songQueue[currentSongIdx].YT_VIDEO_ID)
+            }
+          >
+            Pause
+          </Button>
+          <Button onClick={handlePrevious}>Previous</Button>
+          <Button onClick={handleNext}>Next</Button>
+          <SearchPopup
+            handleSelectTrack={(track) => {
+              setSongQueue((prev) => [...prev, track]);
+              sendEvent("addToQueue", track.YT_VIDEO_ID);
+            }}
+          >
+            <Button>Search</Button>
+          </SearchPopup>
         </div>
       )}
       <div>
-        <p>Now playing: {currentSong}</p>
-      </div>
-      <div>
         <p className="flex flex-col">
-          Queue:{" "}
-          {songQueue.map((song) => (
-            <span key={song}>{song}</span>
+          Up Next:{" "}
+          {songQueue.slice(currentSongIdx + 1).map((song, idx) => (
+            <span key={idx}>{song.YT_TITLE}</span>
           ))}
         </p>
       </div>
