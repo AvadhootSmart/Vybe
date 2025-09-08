@@ -4,6 +4,7 @@ import (
 	"Vybe/utils"
 	"bytes"
 	"fmt"
+	"log"
 	"os/exec"
 	"strings"
 )
@@ -20,12 +21,13 @@ func BatchSearch(queries []string) ([]VideoInfo, error) {
 		prefixed[i] = fmt.Sprintf("ytsearch1:%s", q)
 	}
 
-	ytDlpPath := utils.YT_DLP_PATH
+	ytDlpPath := utils.YtDlpPath()
+	log.Println("PATH:", ytDlpPath)
 	if ytDlpPath == "" {
 		ytDlpPath = "yt-dlp"
 	}
 
-	cookiesPath := utils.COOKIES_PATH
+	cookiesPath := utils.CookiesPath()
 	if cookiesPath == "" {
 		cookiesPath = "../cookies.txt"
 	}
@@ -64,12 +66,12 @@ func BatchSearch(queries []string) ([]VideoInfo, error) {
 
 func Search(query string) ([]VideoInfo, error) {
 
-	ytDlpPath := utils.YT_DLP_PATH
+	ytDlpPath := utils.YtDlpPath()
 	if ytDlpPath == "" {
 		ytDlpPath = "yt-dlp"
 	}
 
-	cookiesPath := utils.COOKIES_PATH
+	cookiesPath := utils.CookiesPath()
 	if cookiesPath == "" {
 		cookiesPath = "../cookies.txt"
 	}

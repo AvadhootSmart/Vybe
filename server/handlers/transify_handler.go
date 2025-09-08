@@ -30,7 +30,7 @@ func Transify(c *fiber.Ctx) error {
 	log.Printf("Transify called with %d video IDs: %v", len(req.VideoIDs), req.VideoIDs)
 	ctx := context.Background()
 
-	cacheDir := utils.AUDIO_CACHE_DIR 
+	cacheDir := utils.AudioCacheDir()
 	if cacheDir == "" {
 		cacheDir = "./audio"
 	}
@@ -84,8 +84,8 @@ func downloadVideo(ctx context.Context, videoId, cacheDir string) string {
 	outputPath := filepath.Join(cacheDir, fmt.Sprintf("%s.%%(ext)s", videoId))
 	videoURL := fmt.Sprintf("https://www.youtube.com/watch?v=%s", videoId)
 
-	cmd := exec.Command(utils.YT_DLP_PATH,
-		"--cookies", utils.COOKIES_PATH,
+	cmd := exec.Command(utils.YtDlpPath(),
+		"--cookies", utils.CookiesPath(),
 		"-f", "bestaudio[ext=m4a]", // use original format for speed
 		// "--audio-format", "copy",    // skip conversion
 		"--no-warnings",

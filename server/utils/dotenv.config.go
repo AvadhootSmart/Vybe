@@ -1,12 +1,9 @@
 package utils
 
-import (
-	"os"
-)
+import "os"
 
-var PORT string = os.Getenv("PORT")
-var PROD_URL string = os.Getenv("PROD_URL")
-var AUDIO_CACHE_DIR string = os.Getenv("AUDIO_CACHE_DIR")
-var COOKIES_PATH string = os.Getenv("COOKIES_PATH")
-var YT_DLP_PATH string = os.Getenv("YT_DLP_PATH")
-
+// func Port() string          { return os.Getenv("PORT") }
+// func ProdURL() string       { return os.Getenv("PROD_URL") }
+func AudioCacheDir() string { return os.Getenv("AUDIO_CACHE_DIR") }
+func CookiesPath() string   { return os.Getenv("COOKIES_PATH") }
+func YtDlpPath() string     { return os.Getenv("YT_DLP_PATH") }
