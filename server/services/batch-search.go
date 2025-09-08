@@ -1,6 +1,7 @@
 package services
 
 import (
+	"Vybe/utils"
 	"bytes"
 	"fmt"
 	"os/exec"
@@ -19,7 +20,17 @@ func BatchSearch(queries []string) ([]VideoInfo, error) {
 		prefixed[i] = fmt.Sprintf("ytsearch1:%s", q)
 	}
 
-	cmd := exec.Command("yt-dlp", "--print", "%(id)s\t%(title)s\t%(channel)s", "--no-warnings", "--quiet", "-a", "-")
+	ytDlpPath := utils.YT_DLP_PATH
+	if ytDlpPath == "" {
+		ytDlpPath = "yt-dlp"
+	}
+
+	cookiesPath := utils.COOKIES_PATH
+	if cookiesPath == "" {
+		cookiesPath = "../cookies.txt"
+	}
+
+	cmd := exec.Command(ytDlpPath, "--cookies", cookiesPath, "--print", "%(id)s\t%(title)s\t%(channel)s", "--no-warnings", "--quiet", "-a", "-")
 
 	var stdin bytes.Buffer
 	stdin.WriteString(strings.Join(prefixed, "\n"))
@@ -53,8 +64,18 @@ func BatchSearch(queries []string) ([]VideoInfo, error) {
 
 func Search(query string) ([]VideoInfo, error) {
 
+	ytDlpPath := utils.YT_DLP_PATH
+	if ytDlpPath == "" {
+		ytDlpPath = "yt-dlp"
+	}
+
+	cookiesPath := utils.COOKIES_PATH
+	if cookiesPath == "" {
+		cookiesPath = "../cookies.txt"
+	}
+
 	search := fmt.Sprintf("ytsearch1:%s", query)
-	cmd := exec.Command("yt-dlp", "--print", "%(id)s\t%(title)s\t%(channel)s", "--no-warnings", "--quiet", search)
+	cmd := exec.Command(ytDlpPath, "--cookies", cookiesPath, "--print", "%(id)s\t%(title)s\t%(channel)s", "--no-warnings", "--quiet", search)
 
 	var out, stderr bytes.Buffer
 	cmd.Stdout = &out

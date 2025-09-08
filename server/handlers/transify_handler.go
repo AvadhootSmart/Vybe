@@ -30,7 +30,10 @@ func Transify(c *fiber.Ctx) error {
 	log.Printf("Transify called with %d video IDs: %v", len(req.VideoIDs), req.VideoIDs)
 	ctx := context.Background()
 
-	cacheDir := "./audio"
+	cacheDir := utils.AUDIO_CACHE_DIR 
+	if cacheDir == "" {
+		cacheDir = "./audio"
+	}
 	if err := os.MkdirAll(cacheDir, 0755); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Cache directory error"})
 	}
@@ -80,10 +83,9 @@ func downloadVideo(ctx context.Context, videoId, cacheDir string) string {
 	// Step 2: Download using yt-dlp
 	outputPath := filepath.Join(cacheDir, fmt.Sprintf("%s.%%(ext)s", videoId))
 	videoURL := fmt.Sprintf("https://www.youtube.com/watch?v=%s", videoId)
-	cookiesPath := "../cookies.txt" // adjust if needed
 
-	cmd := exec.Command("yt-dlp",
-		"--cookies", cookiesPath,
+	cmd := exec.Command(utils.YT_DLP_PATH,
+		"--cookies", utils.COOKIES_PATH,
 		"-f", "bestaudio[ext=m4a]", // use original format for speed
 		// "--audio-format", "copy",    // skip conversion
 		"--no-warnings",

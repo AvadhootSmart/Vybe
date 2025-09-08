@@ -5,6 +5,7 @@ import (
 	"Vybe/services"
 	"Vybe/utils"
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -28,7 +29,9 @@ func main() {
 
 	hub := services.NewHub()
 
-	var CLIENT_URL string = os.Getenv("CLIENT_URL")
+	var PORT string = os.Getenv("PORT")
+
+	var CLIENT_URL string = os.Getenv("PROD_URL")
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     CLIENT_URL,
 		AllowMethods:     "GET,POST,PUT,DELETE,HEAD",
@@ -117,7 +120,7 @@ func main() {
 
 	// Run the server in a goroutine so we can catch shutdown signals
 	go func() {
-		if err := app.Listen(":8001"); err != nil {
+		if err := app.Listen(fmt.Sprintf(":%s", PORT)); err != nil {
 			log.Printf("Server stopped: %v", err)
 		}
 	}()
