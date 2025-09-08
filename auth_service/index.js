@@ -7,6 +7,7 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const session = require("express-session");
 const SpotifyWebApi = require("spotify-web-api-node");
+const jwt = require("jsonwebtoken");
 
 const SpotifyApi = new SpotifyWebApi({
   clientId: process.env.SPOTIFY_CLIENT_ID,
@@ -97,11 +98,7 @@ app.get("/", (req, res) => {
 app.get(
   "/auth/spotify",
   passport.authenticate("spotify", {
-    scope: [
-      "user-read-email",
-      "user-read-private",
-      "playlist-read-private",
-    ],
+    scope: ["user-read-email", "user-read-private", "playlist-read-private"],
     showDialog: true,
   }),
 );
@@ -136,8 +133,19 @@ app.get(
     failureRedirect: `${process.env.FRONTEND_URL}`,
   }),
   (req, res) => {
-    const token = encodeURIComponent(req.user.accessToken);
-    res.redirect(`${process.env.FRONTEND_URL}/Success?googleAccessToken=${token}`);
+    const payload = {
+      id: req.user.profile.id,
+      email: req.user.profile.emails?.[0]?.value,
+      name: req.user.profile.displayName,
+      picture: req.user.profile.photos?.[0]?.value,
+    };
+    // const token = encodeURIComponent(req.user.accessToken);
+    const token = jwt.sign(payload, process.env.JWT_SECRET, {
+      expiresIn: "6h",
+    });
+    res.redirect(
+      `${process.env.FRONTEND_URL}/Success?googleAccessToken=${token}`,
+    );
   },
 );
 
