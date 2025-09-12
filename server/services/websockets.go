@@ -8,20 +8,29 @@ import (
 	"github.com/gofiber/contrib/websocket"
 )
 
+
 type Client struct {
 	Conn   *websocket.Conn
 	Room   string
 	IsHost bool
+	User   *User
+}
+
+type Song struct {
+	Title string
+	VideoID string
 }
 
 type Event struct {
 	Type string `json:"type"`
-	SongID string `json:"songID,omitempty"`
+	// SongID string `json:"songID,omitempty"`
+	Song Song `json:"song"`
+	Token string `json:"token,omitempty"`
 }
 
 type Room struct {
 	clients        map[*Client]bool
-	songsQueue     []string
+	songsQueue     []Song
 	currentSongIdx int
 }
 
@@ -44,7 +53,7 @@ func (h *Hub) JoinRoom(roomID string, c *Client) {
 	if !ok {
 		room = &Room{
 			clients:        make(map[*Client]bool),
-			songsQueue:     []string{},
+			songsQueue:     []Song{},
 			currentSongIdx: -1,
 		}
 		h.rooms[roomID] = room
@@ -96,12 +105,12 @@ func (h *Hub) Broadcast(roomID string, event Event) {
 
 // ---- Queue Management ----
 
-func (h *Hub) AddSong(roomID, songID string) {
+func (h *Hub) AddSong(roomID string, song Song) {
 	h.mux.Lock()
 	defer h.mux.Unlock()
 
 	if room, ok := h.rooms[roomID]; ok {
-		room.songsQueue = append(room.songsQueue, songID)
+		room.songsQueue = append(room.songsQueue, song)
 		if room.currentSongIdx == -1 {
 			room.currentSongIdx = 0
 		}
@@ -109,52 +118,60 @@ func (h *Hub) AddSong(roomID, songID string) {
 }
 
 // Move to next song
-func (h *Hub) NextSong(roomID string) (string, bool) {
+func (h *Hub) NextSong(roomID string) (nextSong Song, status bool) {
 	h.mux.Lock()
 	defer h.mux.Unlock()
 
 	room, ok := h.rooms[roomID]
 	if !ok || len(room.songsQueue) == 0 {
-		return "", false
+		return Song{}, false
 	}
 
 	if room.currentSongIdx < len(room.songsQueue)-1 {
 		room.currentSongIdx++
 	} else {
-		return "", false // end of queue
+		return Song{}, false // end of queue
 	}
 
-	return room.songsQueue[room.currentSongIdx], true
+	nextSong = room.songsQueue[room.currentSongIdx]
+	return nextSong, true	
+
+	// return room.songsQueue[room.currentSongIdx], true
 }
 
 // Move to previous song
-func (h *Hub) PreviousSong(roomID string) (string, bool) {
+func (h *Hub) PreviousSong(roomID string) (prevSong Song, status bool) {
 	h.mux.Lock()
 	defer h.mux.Unlock()
 
 	room, ok := h.rooms[roomID]
 	if !ok || len(room.songsQueue) == 0 {
-		return "", false
+		return Song{}, false
 	}
 
 	if room.currentSongIdx > 0 {
 		room.currentSongIdx--
 	} else {
-		return "", false // already at start
+		return Song{}, false // already at start
 	}
 
-	return room.songsQueue[room.currentSongIdx], true
+	prevSong = room.songsQueue[room.currentSongIdx]
+	return prevSong, true	
+	// return room.songsQueue[room.currentSongIdx], true
 }
 
 // Get current song
-func (h *Hub) CurrentSong(roomID string) (string, bool) {
+func (h *Hub) CurrentSong(roomID string) (currSong Song, status bool) {
 	h.mux.RLock()
 	defer h.mux.RUnlock()
 
 	room, ok := h.rooms[roomID]
 	if !ok || room.currentSongIdx < 0 || room.currentSongIdx >= len(room.songsQueue) {
-		return "", false
+		return Song{}, false
 	}
 
-	return room.songsQueue[room.currentSongIdx], true
+	currSong = room.songsQueue[room.currentSongIdx]
+	return currSong, true
+
+	// return room.songsQueue[room.currentSongIdx], true
 }

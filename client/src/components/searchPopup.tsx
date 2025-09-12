@@ -103,7 +103,7 @@ export const SearchPopup = ({
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-[600px] w-full">
         <DialogHeader>
-          <DialogTitle>Search Tracks</DialogTitle>
+          <DialogTitle className="text-2xl font-Poppins">Search Tracks</DialogTitle>
           <DialogDescription>
             Find a track to add to your queue
           </DialogDescription>

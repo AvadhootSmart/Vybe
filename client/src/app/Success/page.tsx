@@ -24,7 +24,7 @@ export default function SuccessPage() {
             // no-op
         } finally {
             setTimeout(() => {
-                router.replace("/Explore");
+                router.replace("/Vybe/home");
             }, 600);
         }
     }, [router]);

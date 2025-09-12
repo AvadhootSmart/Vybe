@@ -52,12 +52,14 @@ func main() {
 			Conn:   c,
 			Room:   roomID,
 			IsHost: role == "host",
+			User:   nil,
 		}
 
 		hub.JoinRoom(roomID, client)
-		log.Printf("User %s joined room %s", client.Conn.RemoteAddr(), roomID)
 		defer hub.LeaveRoom(roomID, client)
+		log.Printf("User %s joined room %s", client.Conn.RemoteAddr(), roomID)
 
+		authenticated := false
 		for {
 			_, msg, err := c.ReadMessage()
 			if err != nil {
@@ -71,35 +73,65 @@ func main() {
 				continue
 			}
 
+			if !authenticated {
+				if event.Type == "auth" && event.Token != "" {
+					user , err := services.ParseJWT(event.Token)
+					if err != nil {
+						log.Printf("Auth failed : %v", err)
+						c.WriteMessage(websocket.TextMessage, []byte("unauthorized"))
+						c.Close()
+						return
+					}
+
+					client.User = user
+					log.Printf("User %s authenticated", user.Name)
+
+					c.WriteJSON(fiber.Map{
+						"type": "auth_success",
+						"user": user,
+						"isHost": client.IsHost,
+					})
+					continue
+				} 
+			}else {
+				log.Printf("Unauthenticated message: %v", event)
+				continue
+			}
+
+
 			switch event.Type {
 			case "addToQueue":
 				// only host can modify queue
-				if client.IsHost && event.SongID != "" {
-					hub.AddSong(roomID, event.SongID)
+				if client.IsHost && event.Song.VideoID != "" {
+					hub.AddSong(roomID, event.Song) //TODO: add complete song struct instead of just id
 					hub.Broadcast(roomID, event)
 				}
 
 			case "next":
 				if client.IsHost {
-					if song, ok := hub.NextSong(roomID); ok {
+					if nextSong, ok := hub.NextSong(roomID); ok {
 						hub.Broadcast(roomID, services.Event{
 							Type:   "next",
-							SongID: song,
+							Song:  	nextSong,
 						})
 					}
 				}
 
 			case "previous":
 				if client.IsHost {
-					if song, ok := hub.PreviousSong(roomID); ok {
+					if prevSong, ok := hub.PreviousSong(roomID); ok {
 						hub.Broadcast(roomID, services.Event{
 							Type:   "previous",
-							SongID: song,
+							Song: 	prevSong,
 						})
 					}
 				}
 
-			case "play", "pause":
+			case "play":
+				if client.IsHost {
+					hub.Broadcast(roomID, event)
+				}
+			case "pause":
 				if client.IsHost {
 					hub.Broadcast(roomID, event)
 				}

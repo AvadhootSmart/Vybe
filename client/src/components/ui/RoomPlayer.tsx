@@ -3,8 +3,16 @@ import { useRef, useEffect, useState } from "react";
 import { Button } from "./button";
 import { YOUTUBE_DATA } from "@/types/youtubeData";
 import { SearchPopup } from "../searchPopup";
+import { toast } from "sonner";
 
-const RoomPlayer = ({
+type USER = {
+  ID: string;
+  Email: string;
+  Name: string;
+  Picture: string;
+};
+
+const RoomPlayerPage = ({
   roomID,
   isHost,
 }: {
@@ -14,7 +22,7 @@ const RoomPlayer = ({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const [currentSongIdx, setCurrentSongIdx] = useState<number>(0);
-  //eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [user, setUser] = useState<USER | null>(null);
   const [songQueue, setSongQueue] = useState<YOUTUBE_DATA[]>([
     {
       YT_TITLE: "Waiting",
@@ -41,12 +49,19 @@ const RoomPlayer = ({
   // Connect WebSocket
   useEffect(() => {
     const ws = new WebSocket(
-      `wss://${process.env.NEXT_PUBLIC_BACKEND_HOSTNAME}/ws/${roomID}/${isHost ? "host" : "guest"}`,
+      `ws://${process.env.NEXT_PUBLIC_BACKEND_HOSTNAME}/ws/${roomID}/${isHost ? "host" : "guest"}`,
     );
     wsRef.current = ws;
 
+    const token = localStorage.getItem("googleAccessToken");
+
     ws.onopen = () => {
       console.log("Connected to WebSocket ✅");
+      if (token) {
+        ws.send(JSON.stringify({ type: "auth", token }));
+      } else {
+        toast.error("Unauthorized");
+      }
     };
 
     ws.onmessage = (event) => {
@@ -60,11 +75,13 @@ const RoomPlayer = ({
 
       switch (data.type) {
         case "play":
-          if (data.songID) {
-            const audioSrc = `${process.env.NEXT_PUBLIC_BACKEND_URL}/stream/${data.songID}`;
+          if (data.song.VideoID) {
+            const audioSrc = `${process.env.NEXT_PUBLIC_BACKEND_URL}/stream/${data.song.VideoID}`;
             audioRef.current.src = audioSrc;
             setCurrentSongIdx(
-              songQueue.findIndex((song) => song.YT_VIDEO_ID === data.songID),
+              songQueue.findIndex(
+                (song) => song.YT_VIDEO_ID === data.song.VideoID,
+              ),
             );
           }
           audioRef.current.play();
@@ -76,19 +93,30 @@ const RoomPlayer = ({
 
         case "next":
         case "previous":
-          if (data.songID) {
-            const audioSrc = `${process.env.NEXT_PUBLIC_BACKEND_URL}/stream/${data.songID}`;
+          if (data.song.VideoID) {
+            const audioSrc = `${process.env.NEXT_PUBLIC_BACKEND_URL}/stream/${data.song.VideoID}`;
             audioRef.current.src = audioSrc;
             setCurrentSongIdx(
-              songQueue.findIndex((song) => song.YT_VIDEO_ID === data.songID),
+              songQueue.findIndex(
+                (song) => song.YT_VIDEO_ID === data.song.VideoID,
+              ),
             );
             audioRef.current.play();
           }
           break;
 
         case "addToQueue":
-          // optionally update UI queue
+          setSongQueue((prev) => [
+            ...prev,
+            {
+              YT_TITLE: data.song.Title,
+              YT_VIDEO_ID: data.song.VideoID,
+            },
+          ]);
           break;
+
+        case "auth_success":
+          setUser(data.user);
       }
     };
 
@@ -105,9 +133,17 @@ const RoomPlayer = ({
   }, [currentSongIdx]);
 
   // send events (only host)
-  const sendEvent = (type: string, songID?: string) => {
+  const sendEvent = (type: string, song?: YOUTUBE_DATA) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ type, songID }));
+      wsRef.current.send(
+        JSON.stringify({
+          type,
+          song: {
+            Title: song?.YT_TITLE,
+            VideoID: song?.YT_VIDEO_ID,
+          },
+        }),
+      );
     }
   };
 
@@ -120,7 +156,7 @@ const RoomPlayer = ({
       audioRef.current.src = `${process.env.NEXT_PUBLIC_BACKEND_URL}/stream/${nextSong.YT_VIDEO_ID}`;
       audioRef.current.play();
     }
-    sendEvent("play", nextSong.YT_VIDEO_ID);
+    sendEvent("play", nextSong);
   };
 
   const handlePrevious = () => {
@@ -132,7 +168,7 @@ const RoomPlayer = ({
       audioRef.current.src = `${process.env.NEXT_PUBLIC_BACKEND_URL}/stream/${prevSong.YT_VIDEO_ID}`;
       audioRef.current.play();
     }
-    sendEvent("play", prevSong.YT_VIDEO_ID);
+    sendEvent("play", prevSong);
   };
 
   return (
@@ -140,26 +176,18 @@ const RoomPlayer = ({
       <audio ref={audioRef} controls onEnded={handleNext} />
       {isHost && (
         <div className="space-x-2">
-          <Button
-            onClick={() =>
-              sendEvent("play", songQueue[currentSongIdx].YT_VIDEO_ID)
-            }
-          >
+          <Button onClick={() => sendEvent("play", songQueue[currentSongIdx])}>
             Play
           </Button>
-          <Button
-            onClick={() =>
-              sendEvent("pause", songQueue[currentSongIdx].YT_VIDEO_ID)
-            }
-          >
+          <Button onClick={() => sendEvent("pause", songQueue[currentSongIdx])}>
             Pause
           </Button>
           <Button onClick={handlePrevious}>Previous</Button>
           <Button onClick={handleNext}>Next</Button>
           <SearchPopup
             handleSelectTrack={(track) => {
-              setSongQueue((prev) => [...prev, track]);
-              sendEvent("addToQueue", track.YT_VIDEO_ID);
+              // setSongQueue((prev) => [...prev, track]);
+              sendEvent("addToQueue", track);
             }}
           >
             <Button>Search</Button>
@@ -168,14 +196,24 @@ const RoomPlayer = ({
       )}
       <div>
         <p className="flex flex-col">
+          Now Playing:{" "}
+          <span>{songQueue[currentSongIdx]?.YT_TITLE}</span>
+        </p>
+      </div>
+      <div>
+        <p className="flex flex-col">
           Up Next:{" "}
           {songQueue.slice(currentSongIdx + 1).map((song, idx) => (
             <span key={idx}>{song.YT_TITLE}</span>
           ))}
         </p>
       </div>
+      <div className="flex items-center gap-1">
+        <img src={user?.Picture} alt="" className="w-10 h-10 rounded-full" />
+        <h1>{user?.Name}</h1>
+      </div>
     </div>
   );
 };
 
-export default RoomPlayer;
+export default RoomPlayerPage;
