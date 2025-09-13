@@ -54,6 +54,10 @@ export function RoomPopup({
     try {
       setIsSubmitting(true);
       if (mode === "create") {
+        // Set localStorage flag for room host
+        const roomKey = `room_${trimmed}_host`;
+        localStorage.setItem(roomKey, "true");
+
         await Promise.resolve(onCreate?.(trimmed));
       } else {
         await Promise.resolve(onJoin?.(trimmed));

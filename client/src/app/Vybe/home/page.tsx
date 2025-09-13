@@ -46,7 +46,7 @@ export default function HomePage() {
             </Link>
 
             <RoomPopup
-              onCreate={(code) => router.push(`/Vybe/room/${code}?H`)}
+              onCreate={(code) => router.push(`/Vybe/room/${code}`)}
               onJoin={(code) => router.push(`/Vybe/room/${code}`)}
             >
               <Button

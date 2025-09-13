@@ -1,21 +1,26 @@
 "use client";
-import RoomPlayer from "@/components/ui/RoomPlayer";
-import { useParams, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import RoomPlayerPage from "@/components/ui/RoomPlayer";
+import { useParams } from "next/navigation";
 
 const RoomPage = () => {
   const { id } = useParams();
-  const searchParams = useSearchParams();
-  const isHost = searchParams.has("H"); //TODO:temporarily using, make it more robust
+  const [isHost, setIsHost] = useState(false);
 
+  useEffect(() => {
+    if (id) {
+      const hostStatus = localStorage.getItem(`room_${id}_host`) === "true";
+      setIsHost(hostStatus);
+      console.log(hostStatus)
+    }
+  }, [id]);
 
   return (
     <div className="bg-neutral-950 w-full text-white h-screen">
       <div className="max-w-7xl mx-auto">
-        <h1>Room {id}</h1>
         {id && (
-          <RoomPlayer
-            songQueue={songQueue}
-            roomID={id?.toString()}
+          <RoomPlayerPage
+            roomID={id.toString()}
             isHost={isHost}
           />
         )}
