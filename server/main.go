@@ -43,7 +43,6 @@ func main() {
 		return c.SendString("Server Running 🚀")
 	})
 
-
 	app.Get("/ws/:roomID/:role", websocket.New(func(c *websocket.Conn) {
 		roomID := c.Params("roomID")
 		role := c.Params("role")
@@ -56,7 +55,13 @@ func main() {
 		}
 
 		hub.JoinRoom(roomID, client)
-		defer hub.LeaveRoom(roomID, client)
+		defer func() {
+			// Notify other users that someone left before removing from room
+			if client.User != nil {
+				hub.NotifyUserLeave(roomID, client.User)
+			}
+			hub.LeaveRoom(roomID, client)
+		}()
 		log.Printf("User %s joined room %s", client.Conn.RemoteAddr(), roomID)
 
 		authenticated := false
@@ -75,7 +80,7 @@ func main() {
 
 			if !authenticated {
 				if event.Type == "auth" && event.Token != "" {
-					user , err := services.ParseJWT(event.Token)
+					user, err := services.ParseJWT(event.Token)
 					if err != nil {
 						log.Printf("Auth failed : %v", err)
 						c.WriteMessage(websocket.TextMessage, []byte("unauthorized"))
@@ -87,17 +92,22 @@ func main() {
 					log.Printf("User %s authenticated", user.Name)
 
 					c.WriteJSON(fiber.Map{
-						"type": "auth_success",
-						"user": user,
+						"type":   "auth_success",
+						"user":   user,
 						"isHost": client.IsHost,
 					})
-					continue
-				} 
-			}else {
-				log.Printf("Unauthenticated message: %v", event)
-				continue
-			}
 
+					// Notify other users that someone joined
+					hub.NotifyUserJoin(roomID, user)
+					// Send current user list to the newly joined user
+					hub.BroadcastUsers(roomID)
+					authenticated = true
+					continue
+				} else {
+					log.Printf("Unauthenticated message: %v", event)
+					continue
+				}
+			}
 
 			switch event.Type {
 			case "addToQueue":
@@ -111,8 +121,8 @@ func main() {
 				if client.IsHost {
 					if nextSong, ok := hub.NextSong(roomID); ok {
 						hub.Broadcast(roomID, services.Event{
-							Type:   "next",
-							Song:  	nextSong,
+							Type: "next",
+							Song: nextSong,
 						})
 					}
 				}
@@ -121,8 +131,8 @@ func main() {
 				if client.IsHost {
 					if prevSong, ok := hub.PreviousSong(roomID); ok {
 						hub.Broadcast(roomID, services.Event{
-							Type:   "previous",
-							Song: 	prevSong,
+							Type: "previous",
+							Song: prevSong,
 						})
 					}
 				}

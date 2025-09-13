@@ -8,7 +8,6 @@ import (
 	"github.com/gofiber/contrib/websocket"
 )
 
-
 type Client struct {
 	Conn   *websocket.Conn
 	Room   string
@@ -17,15 +16,16 @@ type Client struct {
 }
 
 type Song struct {
-	Title string
+	Title   string
 	VideoID string
 }
 
 type Event struct {
-	Type string `json:"type"`
-	// SongID string `json:"songID,omitempty"`
-	Song Song `json:"song"`
-	Token string `json:"token,omitempty"`
+	Type  string  `json:"type"`
+	Song  Song    `json:"song,omitempty"`
+	Token string  `json:"token,omitempty"`
+	Users []*User `json:"users,omitempty"`
+	User  *User   `json:"user,omitempty"`
 }
 
 type Room struct {
@@ -134,7 +134,7 @@ func (h *Hub) NextSong(roomID string) (nextSong Song, status bool) {
 	}
 
 	nextSong = room.songsQueue[room.currentSongIdx]
-	return nextSong, true	
+	return nextSong, true
 
 	// return room.songsQueue[room.currentSongIdx], true
 }
@@ -156,7 +156,7 @@ func (h *Hub) PreviousSong(roomID string) (prevSong Song, status bool) {
 	}
 
 	prevSong = room.songsQueue[room.currentSongIdx]
-	return prevSong, true	
+	return prevSong, true
 	// return room.songsQueue[room.currentSongIdx], true
 }
 
@@ -174,4 +174,54 @@ func (h *Hub) CurrentSong(roomID string) (currSong Song, status bool) {
 	return currSong, true
 
 	// return room.songsQueue[room.currentSongIdx], true
+}
+
+// ---- User Management ----
+
+// Get all users in a room
+func (h *Hub) GetRoomUsers(roomID string) []*User {
+	h.mux.RLock()
+	defer h.mux.RUnlock()
+
+	room, ok := h.rooms[roomID]
+	if !ok {
+		return []*User{}
+	}
+
+	users := make([]*User, 0, len(room.clients))
+	for client := range room.clients {
+		if client.User != nil {
+			users = append(users, client.User)
+		}
+	}
+
+	return users
+}
+
+// Broadcast user list to all clients in room
+func (h *Hub) BroadcastUsers(roomID string) {
+	users := h.GetRoomUsers(roomID)
+	event := Event{
+		Type:  "all_users",
+		Users: users,
+	}
+	h.Broadcast(roomID, event)
+}
+
+// Notify room when a user joins
+func (h *Hub) NotifyUserJoin(roomID string, user *User) {
+	event := Event{
+		Type: "user_joined",
+		User: user,
+	}
+	h.Broadcast(roomID, event)
+}
+
+// Notify room when a user leaves
+func (h *Hub) NotifyUserLeave(roomID string, user *User) {
+	event := Event{
+		Type: "user_left",
+		User: user,
+	}
+	h.Broadcast(roomID, event)
 }
