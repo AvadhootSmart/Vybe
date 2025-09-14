@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "sonner";
+import { Poppins } from "next/font/google";
 
+
+const poppins = Poppins({
+  subsets: ["latin"], // only load needed characters
+  weight: ["400", "500", "600", "700"], // load only the weights you need
+  variable: "--font-poppins", // optional: use as CSS variable
+});
 export const metadata: Metadata = {
   title: "Vybe",
   description: "Vybe To your Music",
@@ -10,6 +17,7 @@ export const metadata: Metadata = {
   authors: [{ name: "Avadhoot Smart", url: "https://vybe.avadhootsmart.xyz" }],
   metadataBase: new URL("https://vybe.avadhootsmart.xyz"),
 };
+
 
 export default function RootLayout({
   children,
@@ -41,7 +49,7 @@ export default function RootLayout({
           href="/favicon-16x16.png"
         />
       </head>
-      <body className={`antialiased`}>
+      <body className={`antialiased ${poppins.variable}`}>
         <main>{children}</main>
         <Toaster richColors position="top-right" />
       </body>

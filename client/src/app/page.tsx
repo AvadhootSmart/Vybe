@@ -1,6 +1,6 @@
 import { BlurFade } from "@/components/magicui/blur-fade";
 import { Particles } from "@/components/magicui/particles";
-import { LucideMusic2 } from "lucide-react";
+import { IconBrandGoogleFilled } from "@tabler/icons-react";
 
 export default function Login() {
   return (
@@ -21,48 +21,35 @@ export default function Login() {
 
             <BlurFade delay={0.25} inView>
               <div className="mb-8 flex justify-center">
-                <div className="bg-green-500 p-4 rounded-full">
-                  <LucideMusic2 size={40} className="text-white" />
-                </div>
+                <a href={`${process.env.BACKEND_URL}/auth/spotify`}>
+                  <img
+                    src="/apple-touch-icon.png"
+                    alt="Vybe Logo"
+                    className="size-24 rounded-xl"
+                  />
+                </a>
               </div>
             </BlurFade>
 
             {/* Welcome Text */}
             <BlurFade delay={0.25} inView>
-              <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-green-400 to-green-600 bg-clip-text text-transparent whitespace-nowrap">
-                Vybe To your Music
+              <h1 className="text-4xl font-bold mb-4 text-white whitespace-nowrap">
+                Vybe
               </h1>
             </BlurFade>
             <BlurFade delay={0.25 * 2} inView>
               <p className="text-gray-400 mb-8">
-                Connect with Spotify to start your musical journey
+                Music hits different when you share the{" "}
+                <span className="text-[#a7f1e1] font-semibold">Vybe</span>.
               </p>
             </BlurFade>
 
-            {/* Login Button */}
-            <BlurFade delay={0.25 * 3} inView>
-              <a
-                href={`${process.env.BACKEND_URL}/auth/spotify`}
-                className="inline-flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-green-200/25"
-              >
-                <img
-                  src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Spotify_icon.svg/1982px-Spotify_icon.svg.png"
-                  alt="Spotify"
-                  className="w-6 h-6"
-                />
-                Continue with Spotify
-              </a>
-            </BlurFade>
             <BlurFade delay={0.25 * 4} inView>
               <a
                 href={`${process.env.BACKEND_URL}/auth/google`}
-                className="inline-flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-green-200/25 mt-2"
+                className="inline-flex items-center justify-center gap-2 bg-neutral-800 hover:bg-[#a7f1e1] text-white hover:text-black font-semibold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-green-200/25 mt-2"
               >
-                <img
-                  src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg"
-                  alt="Google"
-                  className="w-6 h-6"
-                />
+                <IconBrandGoogleFilled />
                 Continue with Google
               </a>
             </BlurFade>
@@ -75,7 +62,7 @@ export default function Login() {
             Built with ❤️ by{" "}
             <a
               href="https://github.com/AvadhootSmart"
-              className="text-green-500 hover:text-green-600"
+              className="text-[#a7f1e1]"
             >
               Avadhoot Smart
             </a>

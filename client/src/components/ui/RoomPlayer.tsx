@@ -6,6 +6,8 @@ import RoomAudioPlayer from "./RoomAudioPlayer";
 import { Card, CardContent, CardHeader, CardTitle } from "./card";
 import { Badge } from "./badge";
 import { Users, Music, Clock } from "lucide-react";
+import { SearchPopup } from "../searchPopup";
+import { Button } from "./button";
 
 type USER = {
   ID: string;
@@ -84,18 +86,35 @@ const RoomPlayerPage = ({
       }
 
       switch (data.type) {
-        case "play":
-          if (data.song.VideoID) {
-            const audioSrc = `${process.env.NEXT_PUBLIC_BACKEND_URL}/stream/${data.song.VideoID}`;
-            audioRef.current.src = audioSrc;
-            setCurrentSongIdx(
-              songQueue.findIndex(
-                (song) => song.YT_VIDEO_ID === data.song.VideoID,
-              ),
-            );
-          }
+        case "play": {
+          const videoId = data.song.VideoID?.trim();
+          if (!videoId) break;
+
+          const audioSrc = `${process.env.NEXT_PUBLIC_BACKEND_URL}/stream/${videoId}`;
+          audioRef.current.src = audioSrc;
+
+          setSongQueue((prevQueue) => {
+            let idx = prevQueue.findIndex((s) => s.YT_VIDEO_ID === videoId);
+
+            // If song not in queue, add it
+            if (idx === -1) {
+              const newSong = {
+                YT_TITLE: data.song.YT_TITLE,
+                YT_VIDEO_ID: videoId,
+              };
+              const updated = [...prevQueue, newSong];
+              idx = updated.length - 1; // new song index
+              setCurrentSongIdx(idx);
+              return updated;
+            }
+
+            setCurrentSongIdx(idx);
+            return prevQueue;
+          });
+
           audioRef.current.play();
           break;
+        }
 
         case "pause":
           audioRef.current.pause();
@@ -137,7 +156,9 @@ const RoomPlayerPage = ({
           if (data.user) {
             setListeners((prev) => {
               // Check if user already exists to avoid duplicates
-              const exists = prev.some(listener => listener.ID === data.user.ID);
+              const exists = prev.some(
+                (listener) => listener.ID === data.user.ID,
+              );
               if (!exists) {
                 return [...prev, data.user];
               }
@@ -148,7 +169,9 @@ const RoomPlayerPage = ({
 
         case "user_left":
           if (data.user) {
-            setListeners((prev) => prev.filter(listener => listener.ID !== data.user.ID));
+            setListeners((prev) =>
+              prev.filter((listener) => listener.ID !== data.user.ID),
+            );
           }
           break;
       }
@@ -217,9 +240,8 @@ const RoomPlayerPage = ({
     <div className="min-h-screen bg-neutral-950">
       <div className="container mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-4 md:grid-cols-1 gap-8">
-
           {/* Room Header */}
-          <Card className="bg-gradient-to-r from-purple-900/50 to-blue-900/50 border-purple-500/20 col-span-full backdrop-blur-sm">
+          <Card className="bg-gradient-to-r from-vybe/50 to-transparent border-0 col-span-full">
             <CardContent className="p-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="flex items-center gap-4">
@@ -227,20 +249,28 @@ const RoomPlayerPage = ({
                     <Music className="w-8 h-8 text-purple-400" />
                   </div>
                   <div>
-                    <h1 className="text-3xl font-bold text-white capitalize">
+                    <h1 className="text-3xl font-semibold font-Poppins text-white capitalize">
                       {roomID}
                     </h1>
-                    <p className="text-neutral-300 text-sm">Room ID: {roomID}</p>
+                    <p className="text-neutral-300 text-sm">
+                      Room ID: {roomID}
+                    </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <Badge variant="secondary" className="bg-green-600/20 text-green-400 border-green-500/30">
+                  <Badge
+                    variant="secondary"
+                    className="bg-green-600/20 text-green-400 border-green-500/30"
+                  >
                     <Users className="w-4 h-4 mr-2" />
                     {listeners.length} Listeners
                   </Badge>
                   {isHost && (
-                    <Badge variant="secondary" className="bg-yellow-600/20 text-yellow-400 border-yellow-500/30">
+                    <Badge
+                      variant="secondary"
+                      className="bg-yellow-600/20 text-yellow-400 border-yellow-500/30"
+                    >
                       Host
                     </Badge>
                   )}
@@ -249,113 +279,147 @@ const RoomPlayerPage = ({
             </CardContent>
           </Card>
 
-          {/* Up Next and Listeners Section - Side by Side */}
-          <div className="col-span-full grid lg:grid-cols-2 gap-6">
+          <div className="col-span-full grid lg:grid-cols-3 gap-6">
             {/* Queue Section */}
-            <Card className="bg-neutral-800/50 border-neutral-700  backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white">
-                  <Clock className="w-5 h-5 text-blue-400" />
-                  Up Next
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {songQueue.slice(currentSongIdx + 1).length > 0 ? (
-                    songQueue.slice(currentSongIdx + 1).map((song, idx) => (
-                      <div key={idx} className="flex items-center gap-3 rounded-lg hover:bg-neutral-700/70 transition-colors">
-                        <img src="/apple-touch-icon.png" alt="cover-img" className="size-16 rounded-md" />
+            <QueueCard>
+              <div className="space-y-3 min-h-[40vh]">
+                {songQueue.length > 0 ? (
+                  songQueue.map((song, idx) => (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-3 rounded-lg hover:bg-neutral-700/70 transition-colors"
+                    >
+                      <img
+                        src="/apple-touch-icon.png"
+                        alt="cover-img"
+                        className="size-16 rounded-md"
+                      />
 
-                        <div className="flex-1">
-                          <p className="text-white font-medium">{song.YT_TITLE}</p>
-                        </div>
+                      <div className="flex-1">
+                        <p className="text-white font-medium">
+                          {song.YT_TITLE}
+                        </p>
                       </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-8 text-neutral-400">
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex flex-col gap-3 items-center justify-center h-[40vh] text-neutral-400">
+                    <div className="text-center">
                       <Music className="w-12 h-12 mx-auto mb-3 opacity-50" />
                       <p>No songs in queue</p>
-                      <p className="text-sm">Add some music to get started!</p>
                     </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                    <SearchPopup
+                      handleSelectTrack={(track) =>
+                        sendEvent("addToQueue", track)
+                      }
+                    >
+                      <Button variant={"outline"} className="dark">
+                        Add Song to queue
+                      </Button>
+                    </SearchPopup>
+                  </div>
+                )}
+              </div>
+            </QueueCard>
 
             {/* Listeners Section */}
-            <Card className="bg-neutral-800/50 border-neutral-700 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white">
-                  <Users className="w-5 h-5 text-green-400" />
-                  Listeners ({listeners.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {listeners.length > 0 ? (
-                    listeners.map((listener) => {
-                      const isCurrentUser = user?.ID === listener.ID;
-                      const isHostUser = isCurrentUser && isHost;
+            <ListernersCard>
+              <div className="space-y-3">
+                {listeners.length > 0 ? (
+                  listeners.map((listener) => {
+                    const isCurrentUser = user?.ID === listener.ID;
+                    const isHostUser = isCurrentUser && isHost;
 
-                      return (
-                        <div key={listener.ID} className="flex items-center gap-3 p-3 bg-neutral-700/30 rounded-lg hover:bg-neutral-700/50 transition-colors">
-                          <div className="relative">
-                            <img
-                              src={listener.Picture}
-                              alt={listener.Name}
-                              className="w-10 h-10 rounded-full object-cover border-2 border-neutral-600"
-                            />
-                            {isHostUser && (
-                              <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center">
-                                <span className="text-xs text-black font-bold">👑</span>
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-white font-medium truncate">
-                              {listener.Name}
-                              {isCurrentUser && " (You)"}
-                            </p>
-                            <p className="text-neutral-400 text-sm">
-                              {isHostUser ? "Host" : "Listener"}
-                            </p>
-                          </div>
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    return (
+                      <div
+                        key={listener.ID}
+                        className="flex items-center gap-3 p-3 bg-neutral-700/30 rounded-lg hover:bg-neutral-700/50 transition-colors"
+                      >
+                        <div className="relative">
+                          <img
+                            src={listener.Picture}
+                            alt={listener.Name}
+                            className="w-10 h-10 rounded-full object-cover border-2 border-neutral-600"
+                          />
+                          {isHostUser && (
+                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-vybe rounded-full flex items-center justify-center" />
+                          )}
                         </div>
-                      );
-                    })
-                  ) : (
-                    <div className="text-center py-8 text-neutral-400">
-                      <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                      <p>No listeners yet</p>
-                      <p className="text-sm">Waiting for users to join...</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-medium truncate">
+                            {listener.Name}
+                            {isCurrentUser && " (You)"}
+                          </p>
+                          <p className="text-neutral-400 text-sm">
+                            {isHostUser ? "Host" : "Listener"}
+                          </p>
+                        </div>
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-8 text-neutral-400">
+                    <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <p>No listeners yet</p>
+                    <p className="text-sm">Waiting for users to join...</p>
+                  </div>
+                )}
+              </div>
+            </ListernersCard>
           </div>
 
           {/* Main Player Section */}
-          <div className="col-span-full">
-            <RoomAudioPlayer
-              ref={audioRef}
-              isHost={isHost}
-              currentSong={songQueue[currentSongIdx]}
-              onPlay={handlePlay}
-              onPause={handlePause}
-              onNext={handleNext}
-              onPrevious={handlePrevious}
-              onEnded={handleNext}
-              onSearch={(track) => {
-                sendEvent("addToQueue", track)
-              }}
-            />
-          </div>
-
+          {songQueue.length > 0 && (
+            <div className="fixed bottom-10 left-0 right-0 z-50">
+              <div className="mx-auto max-w-7xl w-full bg-neutral-900 border-t border-neutral-800">
+                <RoomAudioPlayer
+                  ref={audioRef}
+                  isHost={isHost}
+                  currentSong={songQueue[currentSongIdx]}
+                  onPlay={handlePlay}
+                  onPause={handlePause}
+                  onNext={handleNext}
+                  onPrevious={handlePrevious}
+                  onEnded={handleNext}
+                  onSearch={(track) => {
+                    sendEvent("addToQueue", track);
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
+  );
+};
+
+const QueueCard = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <Card className="bg-neutral-800/50 border-neutral-700 sm:col-span-2  backdrop-blur-sm">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 font-Poppins text-white">
+          <Clock className="w-5 h-5 text-blue-400" />
+          Up Next
+        </CardTitle>
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
+  );
+};
+
+const ListernersCard = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <Card className="bg-neutral-800/50 border-neutral-700 backdrop-blur-sm">
+      <CardHeader>
+        <CardTitle className="flex items-center font-Poppins gap-2 text-white">
+          <Users className="w-5 h-5 text-green-400" />
+          Listeners
+        </CardTitle>
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
   );
 };
 

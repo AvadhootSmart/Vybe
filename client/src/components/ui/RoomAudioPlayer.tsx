@@ -134,7 +134,7 @@ const RoomAudioPlayer = forwardRef<HTMLAudioElement, RoomAudioPlayerProps>(
                         {/* ProgressBar */}
                         <div className="relative mt-2 w-full lg:h-2 h-3 bg-gray-700 rounded-full">
                             <m.div
-                                className="absolute top-0 left-0 lg:h-2 h-3 bg-[#ccff00] rounded-full"
+                                className="absolute top-0 left-0 lg:h-2 h-3 bg-vybe rounded-full"
                                 animate={{
                                     width: `${(progress / ((ref && typeof ref !== 'function' && ref.current?.duration) || 100)) * 100}%`,
                                 }}

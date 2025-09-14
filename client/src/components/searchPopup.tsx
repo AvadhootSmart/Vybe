@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog";
 import { Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -26,7 +27,7 @@ export const SearchPopup = ({
   children,
   handleSelectTrack,
 }: SearchPopupProps) => {
-  const [open, setOpen] = useState(false);
+  // const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [googleToken, setGoogleToken] = useState("");
   const [results, setResults] = useState<YOUTUBE_DATA[]>([]);
@@ -85,7 +86,6 @@ export const SearchPopup = ({
 
       toast.success("Track selected");
       handleSelectTrack(track); // send track back to parent
-      setOpen(false); // close the dialog
     } catch (e) {
       console.error("Error transifying video:", e);
       toast.error("Failed to prepare audio");
@@ -99,11 +99,13 @@ export const SearchPopup = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-[600px] w-full">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-Poppins">Search Tracks</DialogTitle>
+          <DialogTitle className="text-2xl font-Poppins">
+            Search Tracks
+          </DialogTitle>
           <DialogDescription>
             Find a track to add to your queue
           </DialogDescription>
@@ -134,9 +136,11 @@ export const SearchPopup = ({
         </Card>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            Close
-          </Button>
+          <DialogClose>
+            <Button variant="outline">
+              Close
+            </Button>
+          </DialogClose>
         </DialogFooter>
       </DialogContent>
     </Dialog>
