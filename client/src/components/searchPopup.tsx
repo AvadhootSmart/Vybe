@@ -17,17 +17,19 @@ import {
 import { Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { YOUTUBE_DATA } from "@/types/youtubeData";
+import { cn } from "@/lib/utils";
 
 interface SearchPopupProps {
   children: React.ReactNode; // trigger for the dialog
   handleSelectTrack: (track: YOUTUBE_DATA) => void;
+  className?: string;
 }
 
 export const SearchPopup = ({
   children,
   handleSelectTrack,
+  className
 }: SearchPopupProps) => {
-  // const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [googleToken, setGoogleToken] = useState("");
   const [results, setResults] = useState<YOUTUBE_DATA[]>([]);
@@ -101,7 +103,7 @@ export const SearchPopup = ({
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[600px] w-full">
+      <DialogContent className={cn("sm:max-w-[600px] w-full", className)}>
         <DialogHeader>
           <DialogTitle className="text-2xl font-Poppins">
             Search Tracks

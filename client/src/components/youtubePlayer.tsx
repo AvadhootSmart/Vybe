@@ -106,6 +106,7 @@ const YoutubePlayer = ({
       {/* Hidden Audio Element */}
       <audio
         ref={audioRef}
+        autoPlay
         onEnded={onNext}
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
@@ -123,9 +124,6 @@ const YoutubePlayer = ({
           alt="album-img"
           className="size-20 rounded-lg"
         />
-        {/* <div className="size-20 rounded-lg bg-zinc-700 flex items-center justify-center text-xs text-neutral-300">
-                    YT
-                </div> */}
         <div className="flex flex-col">
           <m.h1
             key={track?.YT_VIDEO_ID}
@@ -160,6 +158,11 @@ const YoutubePlayer = ({
           <Button onClick={onNext} disabled={!onNext}>
             <LucideSkipForward />
           </Button>
+          <SearchPopup handleSelectTrack={(track) => onSelectTrack(track)}>
+            <Button className="sm:hidden">
+              <SearchIcon className="size-4" />
+            </Button>
+          </SearchPopup>
         </div>
 
         {/* ProgressBar */}

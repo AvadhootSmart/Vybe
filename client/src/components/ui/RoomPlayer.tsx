@@ -54,14 +54,14 @@ const RoomPlayerPage = ({
     },
     {
       YT_TITLE: "Better Now - Caslow Remix",
-      YT_VIDEO_ID: "nvKklOc3Rtk ",
+      YT_VIDEO_ID: "nvKklOc3Rtk",
     },
   ]);
 
   // Connect WebSocket
   useEffect(() => {
     const ws = new WebSocket(
-      `wss://${process.env.NEXT_PUBLIC_BACKEND_HOSTNAME}/ws/${roomID}/${isHost ? "host" : "guest"}`,
+      `ws://${process.env.NEXT_PUBLIC_BACKEND_HOSTNAME}/ws/${roomID}/${isHost ? "host" : "guest"}`,
     );
     wsRef.current = ws;
 
@@ -87,28 +87,26 @@ const RoomPlayerPage = ({
 
       switch (data.type) {
         case "play": {
-          const videoId = data.song.VideoID?.trim();
+          const videoId = data.song?.VideoID;
           if (!videoId) break;
 
           const audioSrc = `${process.env.NEXT_PUBLIC_BACKEND_URL}/stream/${videoId}`;
           audioRef.current.src = audioSrc;
 
           setSongQueue((prevQueue) => {
-            let idx = prevQueue.findIndex((s) => s.YT_VIDEO_ID === videoId);
-
-            // If song not in queue, add it
-            if (idx === -1) {
-              const newSong = {
-                YT_TITLE: data.song.YT_TITLE,
+            const existingIndex = prevQueue.findIndex(
+              (s) => s.YT_VIDEO_ID === videoId,
+            );
+            if (existingIndex === -1) {
+              const newSong: YOUTUBE_DATA = {
+                YT_TITLE: data.song?.YT_TITLE || data.song?.Title || "",
                 YT_VIDEO_ID: videoId,
               };
               const updated = [...prevQueue, newSong];
-              idx = updated.length - 1; // new song index
-              setCurrentSongIdx(idx);
+              setCurrentSongIdx(updated.length - 1);
               return updated;
             }
-
-            setCurrentSongIdx(idx);
+            setCurrentSongIdx(existingIndex);
             return prevQueue;
           });
 
@@ -122,26 +120,28 @@ const RoomPlayerPage = ({
 
         case "next":
         case "previous":
-          if (data.song.VideoID) {
-            const audioSrc = `${process.env.NEXT_PUBLIC_BACKEND_URL}/stream/${data.song.VideoID}`;
+          if (data.song?.VideoID) {
+            const vid = data.song.VideoID;
+            const audioSrc = `${process.env.NEXT_PUBLIC_BACKEND_URL}/stream/${vid}`;
             audioRef.current.src = audioSrc;
-            setCurrentSongIdx(
-              songQueue.findIndex(
-                (song) => song.YT_VIDEO_ID === data.song.VideoID,
-              ),
-            );
+            setSongQueue((prev) => {
+              const idx = prev.findIndex((song) => song.YT_VIDEO_ID === vid);
+              if (idx !== -1) setCurrentSongIdx(idx);
+              return prev;
+            });
             audioRef.current.play();
           }
           break;
 
         case "addToQueue":
-          setSongQueue((prev) => [
-            ...prev,
-            {
-              YT_TITLE: data.song.Title,
-              YT_VIDEO_ID: data.song.VideoID,
-            },
-          ]);
+          setSongQueue((prev) => {
+            const vid = data.song?.VideoID;
+            const title = data.song?.Title;
+            if (!vid) return prev;
+            const exists = prev.some((s) => s.YT_VIDEO_ID === vid);
+            if (exists) return prev;
+            return [...prev, { YT_TITLE: title, YT_VIDEO_ID: vid }];
+          });
           break;
 
         case "auth_success":
@@ -229,10 +229,18 @@ const RoomPlayerPage = ({
   };
 
   const handlePlay = () => {
-    sendEvent("play", songQueue[currentSongIdx]);
+    const song = songQueue[currentSongIdx];
+    if (audioRef.current && song) {
+      audioRef.current.src = `${process.env.NEXT_PUBLIC_BACKEND_URL}/stream/${song.YT_VIDEO_ID}`;
+      audioRef.current.play();
+    }
+    sendEvent("play", song);
   };
 
   const handlePause = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
     sendEvent("pause", songQueue[currentSongIdx]);
   };
 
@@ -282,12 +290,21 @@ const RoomPlayerPage = ({
           <div className="col-span-full grid lg:grid-cols-3 gap-6">
             {/* Queue Section */}
             <QueueCard>
-              <div className="space-y-3 min-h-[40vh]">
+              <div className="space-y-3 h-[40vh] overflow-y-scroll">
                 {songQueue.length > 0 ? (
                   songQueue.map((song, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center gap-3 rounded-lg hover:bg-neutral-700/70 transition-colors"
+                    <button
+                      key={song.YT_VIDEO_ID + idx}
+                      onClick={() => {
+                        if (!isHost) return;
+                        setCurrentSongIdx(idx);
+                        if (audioRef.current) {
+                          audioRef.current.src = `${process.env.NEXT_PUBLIC_BACKEND_URL}/stream/${song.YT_VIDEO_ID}`;
+                          audioRef.current.play();
+                        }
+                        sendEvent("play", song);
+                      }}
+                      className={`w-full text-left flex items-center gap-3 p-3 rounded-lg transition-colors ${idx === currentSongIdx ? "bg-neutral-700/70" : "hover:bg-neutral-700/70"}`}
                     >
                       <img
                         src="/apple-touch-icon.png"
@@ -300,7 +317,7 @@ const RoomPlayerPage = ({
                           {song.YT_TITLE}
                         </p>
                       </div>
-                    </div>
+                    </button>
                   ))
                 ) : (
                   <div className="flex flex-col gap-3 items-center justify-center h-[40vh] text-neutral-400">
@@ -309,9 +326,12 @@ const RoomPlayerPage = ({
                       <p>No songs in queue</p>
                     </div>
                     <SearchPopup
-                      handleSelectTrack={(track) =>
-                        sendEvent("addToQueue", track)
-                      }
+                      handleSelectTrack={(track) => {
+                        sendEvent("addToQueue", {
+                          YT_TITLE: track.YT_TITLE,
+                          YT_VIDEO_ID: track.YT_VIDEO_ID,
+                        });
+                      }}
                     >
                       <Button variant={"outline"} className="dark">
                         Add Song to queue
