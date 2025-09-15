@@ -61,7 +61,7 @@ const RoomPlayerPage = ({
   // Connect WebSocket
   useEffect(() => {
     const ws = new WebSocket(
-      `ws://${process.env.NEXT_PUBLIC_BACKEND_HOSTNAME}/ws/${roomID}/${isHost ? "host" : "guest"}`,
+      `wss://${process.env.NEXT_PUBLIC_BACKEND_HOSTNAME}/ws/${roomID}/${isHost ? "host" : "guest"}`,
     );
     wsRef.current = ws;
 
