@@ -13,6 +13,7 @@ import {
   SearchIcon,
 } from "lucide-react";
 import { motion as m } from "motion/react";
+import { Slider } from "./slider";
 // import { VolumeSlider } from "../volumeSlider";
 
 interface RoomAudioPlayerProps {
@@ -156,37 +157,40 @@ const RoomAudioPlayer = forwardRef<HTMLAudioElement, RoomAudioPlayerProps>(
         )}
 
         {/* Volume Control */}
-        {isHost && (
-          <div className="items-center gap-2 hidden md:flex">
-            <SearchPopup handleSelectTrack={(track) => onSearch(track)}>
-              <Button>
-                <SearchIcon className="size-4" />
-              </Button>
-            </SearchPopup>
-              <Button onClick={toggleMute}>
-                {volume > 0 ? (
-                  <LucideVolume2 className="w-4 h-4" />
-                ) : (
-                  <LucideVolumeX className="w-4 h-4" />
-                )}
-              </Button>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value={volume}
-                onChange={handleVolumeChange}
-                className="w-20 cursor-pointer"
-              />
-          </div>
-        )}
-        {/* <VolumeSlider */}
-        {/*   className="w-full sm:w-1/5" */}
-        {/*   value={[volume]} */}
-        {/*   onValueChange={handleVolumeChange} */}
-        {/*   onMute={toggleMute} */}
-        {/* /> */}
+        <div className="items-center gap-2 hidden md:flex">
+          <SearchPopup handleSelectTrack={(track) => onSearch(track)}>
+            <Button>
+              <SearchIcon className="size-4" />
+            </Button>
+          </SearchPopup>
+          <Button onClick={toggleMute}>
+            {volume > 0 ? (
+              <LucideVolume2 className="w-4 h-4" />
+            ) : (
+              <LucideVolumeX className="w-4 h-4" />
+            )}
+          </Button>
+          {/* <input */}
+          {/*   type="range" */}
+          {/*   min="0" */}
+          {/*   max="1" */}
+          {/*   step="0.01" */}
+          {/*   value={volume} */}
+          {/*   onChange={handleVolumeChange} */}
+          {/*   className="w-20 cursor-pointer" */}
+          {/* /> */}
+          <Slider
+            value={[volume]}
+            onValueChange={(val) => {
+              const newVolume = val[0];
+              setVolume(newVolume);
+            }}
+            min={0}
+            max={1}
+            step={0.01}
+            className="w-24" // adjust width as you like
+          />
+        </div>
       </div>
     );
   },

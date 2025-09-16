@@ -78,9 +78,11 @@ export function RoomPopup({
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-Poppins">Vybe Rooms</DialogTitle>
+      <DialogContent>
+        <DialogHeader className="text-left">
+          <DialogTitle className="text-2xl font-Poppins">
+            Vybe Rooms
+          </DialogTitle>
           <DialogDescription>
             Create a new room or join an existing one using a room code.
           </DialogDescription>
@@ -133,29 +135,13 @@ export function RoomPopup({
             </div>
             <p className="text-xs text-muted-foreground">
               {mode === "create"
-                ? "Pick a friendly name (1–60 chars). You can change it later."
+                ? "Pick a friendly name (1–60 chars)."
                 : "Enter the room code (4–12 characters, letters, numbers, hyphens allowed)."}
             </p>
           </form>
         )}
 
         <DialogFooter className="flex justify-between mt-6">
-          <div className="text-sm text-muted-foreground">
-            {mode ? (
-              canConfirm ? (
-                <span>Ready to {mode}.</span>
-              ) : (
-                <span>
-                  {mode === "create"
-                    ? "Room name required."
-                    : "Valid room code required."}
-                </span>
-              )
-            ) : (
-              <span>Select an action to continue.</span>
-            )}
-          </div>
-
           <div className="flex gap-2">
             <Button
               variant="ghost"
