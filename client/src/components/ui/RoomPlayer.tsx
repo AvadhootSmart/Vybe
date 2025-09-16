@@ -391,8 +391,8 @@ const RoomPlayerPage = ({
 
           {/* Main Player Section */}
           {songQueue.length > 0 && (
-            <div className="fixed bottom-10 left-0 right-0 z-50">
-              <div className="mx-auto max-w-7xl w-full bg-neutral-900 border-t border-neutral-800">
+            <div className="fixed bottom-10 left-0 px-4 right-0 z-50">
+              <div className="mx-auto max-w-7xl w-full">
                 <RoomAudioPlayer
                   ref={audioRef}
                   isHost={isHost}
@@ -431,7 +431,7 @@ const QueueCard = ({ children }: { children: React.ReactNode }) => {
 
 const ListernersCard = ({ children }: { children: React.ReactNode }) => {
   return (
-    <Card className="bg-neutral-800/50 border-neutral-700 backdrop-blur-sm">
+    <Card className="bg-neutral-800/50 border-neutral-700 backdrop-blur-sm mb-40 sm:mb-0">
       <CardHeader>
         <CardTitle className="flex items-center font-Poppins gap-2 text-white">
           <Users className="w-5 h-5 text-green-400" />

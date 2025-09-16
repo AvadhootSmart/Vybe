@@ -36,7 +36,12 @@ export default function HomePage() {
 
             <RoomPopup
               onCreate={(code) => router.push(`/Vybe/room/${code}`)}
-              onJoin={(code) => router.push(`/Vybe/room/${code}`)}
+              onJoin={(code) => {
+                if (localStorage.getItem("room_" + code + "_host")) {
+                  localStorage.removeItem("room_" + code + "_host");
+                }
+                router.push(`/Vybe/room/${code}`);
+              }}
             >
               <Button
                 size="lg"

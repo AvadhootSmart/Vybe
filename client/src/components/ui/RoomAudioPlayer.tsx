@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { motion as m } from "motion/react";
 import { Slider } from "./slider";
+import { cn } from "@/lib/utils";
 // import { VolumeSlider } from "../volumeSlider";
 
 interface RoomAudioPlayerProps {
@@ -89,7 +90,7 @@ const RoomAudioPlayer = forwardRef<HTMLAudioElement, RoomAudioPlayerProps>(
     }, [ref]);
 
     return (
-      <div className="p-2 bg-white/10 backdrop-blur-lg w-full flex sm:flex-row flex-col font-Poppins rounded-xl sm:justify-between sm:items-center items-center relative">
+      <div className="p-2 bg-white/10 backdrop-blur-lg w-full flex justify-between sm:flex-row  font-Poppins rounded-xl sm:justify-between sm:items-center items-center relative">
         {/* Hidden Audio Element */}
         <audio
           ref={ref}
@@ -99,7 +100,12 @@ const RoomAudioPlayer = forwardRef<HTMLAudioElement, RoomAudioPlayerProps>(
         />
 
         {/* Track Info */}
-        <div className="hidden gap-2 sm:flex">
+        <div
+          className={cn(
+            "flex self-start gap-2",
+            isHost ? "hidden sm:flex" : "",
+          )}
+        >
           <img
             src="/apple-touch-icon.png"
             alt="album-img"
@@ -153,6 +159,23 @@ const RoomAudioPlayer = forwardRef<HTMLAudioElement, RoomAudioPlayerProps>(
                 transition={{ type: "spring", stiffness: 120, damping: 15 }}
               />
             </div>
+          </div>
+        )}
+
+        {!isHost && (
+          <div className="flex items-center gap-2 sm:hidden">
+            <SearchPopup handleSelectTrack={(track) => onSearch(track)}>
+              <Button>
+                <SearchIcon className="size-4" />
+              </Button>
+            </SearchPopup>
+            <Button onClick={toggleMute}>
+              {volume > 0 ? (
+                <LucideVolume2 className="w-4 h-4" />
+              ) : (
+                <LucideVolumeX className="w-4 h-4" />
+              )}
+            </Button>
           </div>
         )}
 
