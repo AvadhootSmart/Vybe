@@ -18,9 +18,10 @@ import { Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { YOUTUBE_DATA } from "@/types/youtubeData";
 import { cn } from "@/lib/utils";
+import { Skeleton } from "./ui/skeleton";
 
 interface SearchPopupProps {
-  children: React.ReactNode; // trigger for the dialog
+  children: React.ReactNode;
   handleSelectTrack: (track: YOUTUBE_DATA) => void;
   className?: string;
 }
@@ -28,12 +29,14 @@ interface SearchPopupProps {
 export const SearchPopup = ({
   children,
   handleSelectTrack,
-  className
+  className,
 }: SearchPopupProps) => {
   const [query, setQuery] = useState("");
   const [googleToken, setGoogleToken] = useState("");
   const [results, setResults] = useState<YOUTUBE_DATA[]>([]);
   const [addingIds, setAddingIds] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(false); // fix: false by default
+  const [searched, setSearched] = useState(false); // track if user has searched at least once
 
   useEffect(() => {
     const token = localStorage.getItem("googleAccessToken");
@@ -46,24 +49,37 @@ export const SearchPopup = ({
       return;
     }
 
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_BACKEND_URL}/search`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: query }),
-      },
-    );
+    setResults([]);
+    setLoading(true);
+    setSearched(true);
 
-    const data = await response.json();
-    console.log("Search result", data);
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/search`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query }),
+        },
+      );
 
-    if (data.length === 0) {
-      toast.error("No YouTube video found for this track");
-      return;
+      const data = await response.json();
+      console.log("Search result", data);
+
+      if (!data || data.length === 0) {
+        toast.error("No YouTube video found for this track");
+        setResults([]);
+        return;
+      }
+
+      setResults(data);
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(error.message);
+      }
+    } finally {
+      setLoading(false);
     }
-
-    setResults(data);
   };
 
   const selectTrack = async (track: YOUTUBE_DATA) => {
@@ -82,12 +98,10 @@ export const SearchPopup = ({
         },
       );
 
-      if (!resp.ok) {
-        throw new Error("Failed to cache audio");
-      }
+      if (!resp.ok) throw new Error("Failed to cache audio");
 
-      toast.success("Track selected");
-      handleSelectTrack(track); // send track back to parent
+      toast.success("Track Added to queue");
+      handleSelectTrack(track);
     } catch (e) {
       console.error("Error transifying video:", e);
       toast.error("Failed to prepare audio");
@@ -112,6 +126,8 @@ export const SearchPopup = ({
             Find a track to add to your queue
           </DialogDescription>
         </DialogHeader>
+
+        {/* Search bar */}
         <div className="flex gap-2 mb-4">
           <Input
             placeholder="Search for tracks, artists, or playlists..."
@@ -120,28 +136,40 @@ export const SearchPopup = ({
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
           />
-          <Button onClick={handleSearch}>Search</Button>
+          <Button onClick={handleSearch} disabled={loading || query === ""}>
+            Search
+          </Button>
         </div>
 
-        <Card>
-          <CardContent className="space-y-4 max-h-[400px] overflow-y-auto">
-            {results.length > 0 &&
-              results.map((item, idx) => (
-                <ResultsCard
-                  key={idx}
-                  item={item}
-                  isLoading={addingIds.has(item.YT_VIDEO_ID)}
-                  onAdd={selectTrack}
-                />
-              ))}
-          </CardContent>
-        </Card>
+        {/* Results / Loading / Empty state */}
+        {loading ? (
+          <Card>
+            <CardContent className="space-y-4">
+              <Skeleton className="h-[80px]" />
+            </CardContent>
+          </Card>
+        ) : searched && results.length === 0 ? (
+          <p className="text-center text-gray-400">No results found</p>
+        ) : (
+          results.length > 0 && (
+            <Card>
+              <CardContent className="space-y-4 max-h-[400px] overflow-y-auto">
+                {results.map((item) => (
+                  <ResultsCard
+                    key={item.YT_VIDEO_ID}
+                    item={item}
+                    isLoading={addingIds.has(item.YT_VIDEO_ID)}
+                    onAdd={selectTrack}
+                  />
+                ))}
+              </CardContent>
+            </Card>
+          )
+        )}
 
         <DialogFooter>
           <DialogClose>
-            <Button variant="outline">
-              Close
-            </Button>
+            <Button variant="outline">Close</Button>
           </DialogClose>
         </DialogFooter>
       </DialogContent>
@@ -162,12 +190,12 @@ const ResultsCard = ({
     <div className="flex items-center gap-2">
       <img
         src="/apple-touch-icon.png"
-        alt=""
+        alt={item.YT_TITLE}
         className="w-12 h-12 sm:w-20 sm:h-20 object-cover rounded-lg"
       />
       <h1 className="flex-1">{item.YT_TITLE}</h1>
       <Button onClick={() => onAdd(item)} disabled={isLoading}>
-        {isLoading ? <Loader2 className="animate-spin" /> : <Plus />}
+        {isLoading ? <Loader2 className="animate-spin h-4 w-4" /> : <Plus />}
       </Button>
     </div>
   );

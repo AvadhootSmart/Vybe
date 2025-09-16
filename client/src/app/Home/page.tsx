@@ -2,43 +2,32 @@
 import { PlaylistCard } from "@/components/playlistCard";
 import { PlaylistPopup } from "@/components/playlistPopup";
 import { Button } from "@/components/ui/button";
-// import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import usePlaylistStore from "@/store/playlistStore";
 import { LucideSettings2 } from "lucide-react";
 import { AnimatePresence } from "motion/react";
-// import { ARTIST, TRACK } from "@/types/playlist";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { motion as m } from "motion/react";
-// import { YOUTUBE_DATA } from "@/types/youtubeData";
+import { ClearLocalStorage } from "@/lib/utils";
+import { transifyPlaylist } from "@/services/transify";
 
 function Home() {
   const router = useRouter();
-
-  // Get Zustand store actions and state
   const { Playlists, addPlaylistTracks } = usePlaylistStore();
 
   const [spotifyAccessToken, setSpotifyAccessToken] = useState<string>("");
-  //eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [googleToken, setGoogleToken] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedPlaylist, setSelectedPlaylist] = useState<string>("");
 
+  //sets spotify token to useState from document.cookie
   useEffect(() => {
-    // Read Spotify token from cookie (unchanged behavior)
     const spotifyTokenCookie = document.cookie
       .split("; ")
       .find((row) => row.startsWith("spotifyAccessToken="));
     if (spotifyTokenCookie) {
       setSpotifyAccessToken(spotifyTokenCookie.split("=")[1]);
-    }
-
-    // Read Google token only from localStorage
-    const storedGoogleToken = localStorage.getItem("googleAccessToken");
-    if (storedGoogleToken) {
-      setGoogleToken(storedGoogleToken);
     }
   }, []);
 
@@ -63,7 +52,7 @@ function Home() {
       }
       const data = await response.json();
       storePlaylists(data); // Store playlists in Zustand
-      console.log("Playlists fetched:", Playlists);
+      // console.log("Playlists fetched:", Playlists);
     } catch (error) {
       console.error("Error fetching playlists:", error);
       toast.error("Failed to fetch playlists");
@@ -103,176 +92,6 @@ function Home() {
       toast.error("Error fetching playlist items from Spotify");
     }
   };
-
-  async function getYoutubeVideoId(
-    trackName: string,
-    artistName: string,
-  ): Promise<{ YT_TITLE: string; YT_VIDEO_ID: string }> {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_BACKEND_URL}/youtube/search`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${googleToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ trackName, artistName }),
-      },
-    );
-    const data = await response.json();
-
-    if (data.length === 0) {
-      toast.error("No YouTube video found for this track");
-      return {
-        YT_TITLE: "",
-        YT_VIDEO_ID: "",
-      };
-    }
-
-    return {
-      YT_TITLE: data[0].YT_TITLE,
-      YT_VIDEO_ID: data[0].YT_VIDEO_ID,
-    };
-  }
-
-  // async function getPlaylistYTData(
-  //   tracks: string[],
-  // ): Promise<{ data: YOUTUBE_DATA[] } | undefined> {
-  //   const response = await fetch(
-  //     // `${process.env.NEXT_PUBLIC_BACKEND_URL}/playlist/tracks/search`,
-  //     `${process.env.NEXT_PUBLIC_BACKEND_URL}/youtube/search`,
-  //     {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify({ tracks }),
-  //     },
-  //   );
-  //   const data = await response.json();
-
-  //   if (data.length === 0) {
-  //     toast.error("No YouTube video found for this track");
-  //     return;
-  //   }
-  //   return data;
-  // }
-
-  // async function transifyPlaylist() {
-  //   const { Playlists, updateTracks } = usePlaylistStore.getState();
-
-  //   const playlist = Playlists.find((pl) => pl.S_PID === selectedPlaylist);
-  //   if (!playlist) {
-  //     toast.error("Playlist not found");
-  //     return;
-  //   }
-
-  //   const playlistTracks = playlist.S_TRACKS || [];
-
-  //   // Skip if all tracks already have YT_DATA
-  //   if (playlistTracks.every((track) => track.YT_DATA)) {
-  //     toast.success("Playlist Already Transified");
-  //     router.push(`/Playlist/${selectedPlaylist}`);
-  //     return;
-  //   }
-
-  //   // Tracks needing update
-  //   const tracksNeedingUpdate = playlistTracks.filter(
-  //     (track) => !track.YT_DATA,
-  //   );
-
-  //   try {
-  //     // Build request payload
-  //     const payload = {
-  //       tracks: tracksNeedingUpdate.map(
-  //         (track) => `${track.S_NAME}, ${track.S_ARTISTS[0].name}`,
-  //       ),
-  //     };
-
-  //     // Send batch request
-  //     const response = await getPlaylistYTData(payload.tracks);
-  //     // response.data = flat array, same order as payload.tracks
-  //     const ytDataArray = response?.data;
-
-  //     // Map results back to tracksNeedingUpdate
-  //     const updatedTracks = playlistTracks.map((track) => {
-  //       const idx = tracksNeedingUpdate.findIndex(
-  //         (t) => t.S_NAME === track.S_NAME,
-  //       );
-  //       if (idx !== -1 && ytDataArray) {
-  //         return { ...track, YT_DATA: ytDataArray[idx] };
-  //       }
-  //       return track; // already had YT_DATA
-  //     });
-
-  //     updateTracks(updatedTracks, selectedPlaylist);
-  //     toast.success("Playlist Transified");
-  //   } catch (err) {
-  //     console.error("Error transifying playlist:", err);
-  //     toast.error("Failed to transify playlist");
-  //   }
-
-  //   router.push(`/Playlist/${selectedPlaylist}`);
-  // }
-
-  async function transifyPlaylist() {
-    const { Playlists, updateTracks } = usePlaylistStore.getState();
-
-    const playlist = Playlists.find((pl) => pl.S_PID === selectedPlaylist);
-    if (!playlist) {
-      toast.error("Playlist not found");
-      return;
-    }
-
-    const playlistTracks = playlist.S_TRACKS || [];
-
-    // Check if all tracks already have YT_DATA
-    const allTracksTransified = playlistTracks.every((track) => track.YT_DATA);
-
-    if (allTracksTransified) {
-      toast.success("Playlist Already Transified");
-      router.push(`/Playlist/${selectedPlaylist}`);
-      return;
-    }
-
-    // Filter tracks that need YouTube data
-    const tracksNeedingUpdate = playlistTracks.filter(
-      (track) => !track.YT_DATA,
-    );
-
-    try {
-      const fetchedData = await Promise.all(
-        tracksNeedingUpdate.map(async (track) => {
-          const videoData = await getYoutubeVideoId(
-            track.S_NAME,
-            track.S_ARTISTS[0].name,
-          );
-          return { ...track, YT_DATA: videoData };
-        }),
-      );
-
-      // Merge updated tracks with the existing ones
-      const updatedTracks = playlistTracks.map((track) => {
-        const updatedTrack = fetchedData.find((t) => t.S_NAME === track.S_NAME);
-        return updatedTrack || track;
-      });
-
-      // console.log("playlistStore-updateTracks", updatedTracks);
-      updateTracks(updatedTracks, selectedPlaylist);
-      toast.success("Playlist Transified");
-    } catch (error) {
-      console.error("Error transifying playlist:", error);
-      toast.error("Failed to transify playlist");
-    }
-
-    router.push(`/Playlist/${selectedPlaylist}`);
-  }
-
-  function ClearLocalStorage() {
-    localStorage.clear();
-    toast.success("Local Storage Cleared");
-    window.location.reload();
-  }
 
   useEffect(() => {
     if (!spotifyAccessToken) return;
@@ -315,15 +134,21 @@ function Home() {
           isOpen={!!selectedPlaylist}
           selectedPlaylist={selectedPlaylist}
           setSelectedPlaylist={setSelectedPlaylist}
-          transifyPlaylist={transifyPlaylist}
+          transifyPlaylist={(searchType) => {
+            transifyPlaylist(selectedPlaylist, searchType).then(() => {
+              router.push(`/Playlist/${selectedPlaylist}`);
+            });
+          }}
         />
       )}
       <div className="mt-8 sm:my-4 px-2">
         <div className="w-full flex justify-between items-center mb-8">
           <h2 className="text-3xl font-bold">Your Playlists</h2>
-          <Button onClick={ClearLocalStorage}>
-            <LucideSettings2 />
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={ClearLocalStorage}>
+              <LucideSettings2 />
+            </Button>
+          </div>
         </div>
         {isLoading ? (
           <div className="grid lg:grid-cols-4 gap-4">
