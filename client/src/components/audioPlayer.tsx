@@ -152,6 +152,40 @@ const AudioPlayer = ({
       audioRef.current?.removeEventListener("timeupdate", updateProgress);
   }, []);
 
+  useEffect(() => {
+    if ("mediaSession" in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: playlistTracks[playingIdx]?.S_NAME || "Unknown Track",
+        artist:
+          playlistTracks[playingIdx]?.S_ARTISTS?.map((a) => a.name).join(
+            ", ",
+          ) || "Unknown Artist",
+        album: playlistTracks[playingIdx]?.S_ALBUM?.name || "",
+        artwork: [
+          {
+            src:
+              playlistTracks[playingIdx]?.S_ALBUM?.images?.[0]?.url ||
+              "/android-chrome-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+          },
+        ],
+      });
+
+      // Hook gestures / hardware events
+      navigator.mediaSession.setActionHandler("play", handlePlay);
+      navigator.mediaSession.setActionHandler("pause", handlePause);
+      navigator.mediaSession.setActionHandler("previoustrack", playPrev);
+      navigator.mediaSession.setActionHandler("nexttrack", playNext);
+      navigator.mediaSession.setActionHandler("seekbackward", () => {
+        if (audioRef.current) audioRef.current.currentTime -= 10;
+      });
+      navigator.mediaSession.setActionHandler("seekforward", () => {
+        if (audioRef.current) audioRef.current.currentTime += 10;
+      });
+    }
+  }, [playingIdx, playlistTracks]);
+
   return (
     <div className="p-2 bg-white/10 backdrop-blur-lg w-full flex sm:flex-row flex-col font-Poppins rounded-xl sm:justify-between sm:items-center items-center relative">
       {/* Hidden Audio Element */}

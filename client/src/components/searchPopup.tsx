@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { YOUTUBE_DATA } from "@/types/youtubeData";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "./ui/skeleton";
+import { SearchSelect } from "./searchSelect";
 
 interface SearchPopupProps {
   children: React.ReactNode;
@@ -37,6 +38,9 @@ export const SearchPopup = ({
   const [addingIds, setAddingIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false); // fix: false by default
   const [searched, setSearched] = useState(false); // track if user has searched at least once
+  const [searchType, setSearchType] = useState<"yt-api" | "yt-search">(
+    "yt-api",
+  );
 
   useEffect(() => {
     const token = localStorage.getItem("googleAccessToken");
@@ -118,7 +122,7 @@ export const SearchPopup = ({
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className={cn("sm:max-w-[600px] w-full", className)}>
-        <DialogHeader>
+        <DialogHeader className="text-left">
           <DialogTitle className="text-2xl font-Poppins">
             Search Tracks
           </DialogTitle>
@@ -141,7 +145,6 @@ export const SearchPopup = ({
           </Button>
         </div>
 
-        {/* Results / Loading / Empty state */}
         {loading ? (
           <Card>
             <CardContent className="space-y-4">
@@ -168,9 +171,16 @@ export const SearchPopup = ({
         )}
 
         <DialogFooter>
-          <DialogClose>
-            <Button variant="outline">Close</Button>
-          </DialogClose>
+          <div className="flex gap-2 self-end w-full justify-between">
+            <SearchSelect
+              value={searchType}
+              onChange={(value) => setSearchType(value)}
+              triggerClassName="w-fit"
+            />
+            <DialogClose>
+              <Button variant="outline">Close</Button>
+            </DialogClose>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

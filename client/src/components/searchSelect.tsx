@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -10,11 +11,16 @@ import {
 interface SearchSelectProps {
   value: string;
   onChange: (value: "yt-api" | "yt-search") => void;
+  triggerClassName?: string;
 }
-export const SearchSelect = ({ value, onChange }: SearchSelectProps) => {
+export const SearchSelect = ({
+  value,
+  onChange,
+  triggerClassName,
+}: SearchSelectProps) => {
   return (
     <Select onValueChange={onChange} value={value}>
-      <SelectTrigger className="sm:w-fit w-10">
+      <SelectTrigger className={cn("sm:w-fit w-10", triggerClassName)}>
         <SelectValue placeholder="Select search type" />
       </SelectTrigger>
       <SelectContent>
