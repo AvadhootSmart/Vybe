@@ -45,13 +45,13 @@ const RoomAudioPlayer = forwardRef<HTMLAudioElement, RoomAudioPlayerProps>(
     const [progress, setProgress] = useState(0);
     const [volume, setVolume] = useState(0.25);
 
-    const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const newVolume = parseFloat(e.target.value);
-      if (ref && typeof ref !== "function" && ref.current) {
-        ref.current.volume = newVolume;
-      }
-      setVolume(newVolume);
-    };
+    // const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    //   const newVolume = parseFloat(e.target.value);
+    //   if (ref && typeof ref !== "function" && ref.current) {
+    //     ref.current.volume = newVolume;
+    //   }
+    //   setVolume(newVolume);
+    // };
     //
     // const handleVolumeChange = (value: number[]) => {
     //   const newVolume = value[0];
