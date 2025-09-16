@@ -7,3 +7,4 @@ import "os"
 func AudioCacheDir() string { return os.Getenv("AUDIO_CACHE_DIR") }
 func CookiesPath() string   { return os.Getenv("COOKIES_PATH") }
 func YtDlpPath() string     { return os.Getenv("YT_DLP_PATH") }
+func YtApiKey() string      { return os.Getenv("YOUTUBE_API_KEY") }

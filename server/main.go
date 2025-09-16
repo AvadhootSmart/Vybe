@@ -25,7 +25,11 @@ func main() {
 	}
 
 	app := fiber.New()
-	app.Use(logger.New())
+	app.Use(logger.New(logger.Config{
+		Next: func(c *fiber.Ctx) bool {
+			return c.Method() == "OPTIONS"
+		},
+	}))
 
 	hub := services.NewHub()
 
@@ -156,8 +160,11 @@ func main() {
 	app.Get("/me", handlers.GetUserData)
 	app.Get("/spotify/playlists", handlers.GetAllPlaylists)
 	app.Get("/spotify/playlist/:PID", handlers.GetPlaylistTracks)
+
 	app.Post("/search", handlers.SingleSearch)
 	app.Post("/playlist/tracks/search", handlers.PlaylistTracksSearch)
+	app.Post("/youtube/search", handlers.ApiSearch)
+
 	app.Post("/transify", handlers.Transify)
 	app.Get("/stream/:videoID", handlers.StreamAudio)
 

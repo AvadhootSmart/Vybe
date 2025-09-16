@@ -16,6 +16,16 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+var downloadLimit = make(chan struct{}, 2)
+
+func acquireSlot() {
+	downloadLimit <- struct{}{}
+}
+
+func releaseSlot() {
+	<-downloadLimit
+}
+
 func Transify(c *fiber.Ctx) error {
 	type Request struct {
 		VideoIDs []string `json:"videoIds"`
@@ -46,6 +56,9 @@ func Transify(c *fiber.Ctx) error {
 		wg.Add(1)
 		go func(videoId string) {
 			defer wg.Done()
+
+			acquireSlot()
+			defer releaseSlot()
 
 			finalPath := downloadVideo(ctx, videoId, cacheDir)
 			if finalPath != "" {
@@ -87,7 +100,6 @@ func downloadVideo(ctx context.Context, videoId, cacheDir string) string {
 	cmd := exec.Command(utils.YtDlpPath(),
 		"--cookies", utils.CookiesPath(),
 		"-f", "bestaudio[ext=m4a]", // use original format for speed
-		// "--audio-format", "copy",    // skip conversion
 		"--no-warnings",
 		"--no-progress",
 		"--quiet",

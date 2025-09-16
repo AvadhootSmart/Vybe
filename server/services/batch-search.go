@@ -9,6 +9,16 @@ import (
 	"strings"
 )
 
+var ytDlpLimit = make(chan struct{}, 2)
+
+func acquireSlot() {
+	ytDlpLimit <- struct{}{}
+}
+
+func releaseSlot() {
+	<-ytDlpLimit
+}
+
 type VideoInfo struct {
 	ID      string
 	Title   string
@@ -32,6 +42,7 @@ func BatchSearch(queries []string) ([]VideoInfo, error) {
 		cookiesPath = "../cookies.txt"
 	}
 
+
 	cmd := exec.Command(ytDlpPath, "--cookies", cookiesPath, "--print", "%(id)s\t%(title)s\t%(channel)s", "--no-warnings", "--quiet", "-a", "-")
 
 	var stdin bytes.Buffer
@@ -41,6 +52,9 @@ func BatchSearch(queries []string) ([]VideoInfo, error) {
 	var out, stderr bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &stderr
+
+	acquireSlot()
+	defer releaseSlot()
 
 	err := cmd.Run()
 	if err != nil {
@@ -82,6 +96,9 @@ func Search(query string) ([]VideoInfo, error) {
 	var out, stderr bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &stderr
+
+	acquireSlot()
+	defer releaseSlot()
 
 	err := cmd.Run()
 	if err != nil {
