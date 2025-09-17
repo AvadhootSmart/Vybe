@@ -8,3 +8,10 @@ func AudioCacheDir() string { return os.Getenv("AUDIO_CACHE_DIR") }
 func CookiesPath() string   { return os.Getenv("COOKIES_PATH") }
 func YtDlpPath() string     { return os.Getenv("YT_DLP_PATH") }
 func YtApiKey() string      { return os.Getenv("YOUTUBE_API_KEY") }
+func SpotifyClientID() string {
+	return os.Getenv("SPOTIFY_CLIENT_ID")
+}
+
+func SpotifyClientSecret() string {
+	return os.Getenv("SPOTIFY_CLIENT_SECRET")
+}
