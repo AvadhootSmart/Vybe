@@ -109,7 +109,10 @@ const RoomAudioPlayer = forwardRef<HTMLAudioElement, RoomAudioPlayerProps>(
           <img
             src="/apple-touch-icon.png"
             alt="album-img"
-            className="size-20 rounded-lg"
+            className={cn(
+              "size-20 rounded-lg",
+              !currentSong && "animate-pulse",
+            )}
           />
           <div className="flex flex-col">
             <m.h1
@@ -117,11 +120,11 @@ const RoomAudioPlayer = forwardRef<HTMLAudioElement, RoomAudioPlayerProps>(
               initial={{ opacity: 0, filter: "blur(10px)" }}
               animate={{ opacity: 1, filter: "blur(0px)" }}
               transition={{ duration: 0.35 }}
-              className="text-sm font-semibold text-white"
+              className={cn("text-sm font-semibold text-white")}
             >
-              {currentSong?.YT_TITLE || "Unknown Video"}
+              {currentSong?.YT_TITLE || "Add a song"}
             </m.h1>
-            <span className="text-neutral-400 text-xs">YouTube</span>
+            <span className="text-neutral-400 text-xs">Vybe</span>
           </div>
         </div>
 
@@ -208,7 +211,8 @@ const RoomAudioPlayer = forwardRef<HTMLAudioElement, RoomAudioPlayerProps>(
               const newVolume = val[0];
               setVolume(newVolume);
               if (ref && typeof ref !== "function" && ref.current) {
-                ref.current.volume = newVolume;               }
+                ref.current.volume = newVolume;
+              }
             }}
             min={0}
             max={1}

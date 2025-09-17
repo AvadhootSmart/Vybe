@@ -7,6 +7,29 @@ import Link from "next/link";
 
 export default function HomePage() {
   const router = useRouter();
+
+  const handleCreateRoom = (roomID: string) => {
+    localStorage.setItem(
+      "roomSession",
+      JSON.stringify({ code: roomID, role: "host" }),
+    );
+
+    router.push(`/Vybe/room/${roomID}`);
+  };
+
+  const handleJoinRoom = (code: string) => {
+    if (localStorage.getItem("room_" + code + "_host")) {
+      localStorage.removeItem("room_" + code + "_host");
+    }
+    localStorage.setItem(
+      "roomSession",
+      JSON.stringify({
+        code,
+        role: "guest",
+      }),
+    );
+    router.push(`/Vybe/room/${code}`);
+  };
   return (
     <div className="bg-gradient-to-t from-vybe via-black to-neutral-950 flex justify-center">
       <div className="flex min-h-screen max-w-6xl flex-col items-center justify-center text-white px-6">
@@ -35,13 +58,8 @@ export default function HomePage() {
             </Link>
 
             <RoomPopup
-              onCreate={(code) => router.push(`/Vybe/room/${code}`)}
-              onJoin={(code) => {
-                if (localStorage.getItem("room_" + code + "_host")) {
-                  localStorage.removeItem("room_" + code + "_host");
-                }
-                router.push(`/Vybe/room/${code}`);
-              }}
+              onCreate={(code) => handleCreateRoom(code)}
+              onJoin={(code) => handleJoinRoom(code)}
             >
               <Button
                 size="lg"

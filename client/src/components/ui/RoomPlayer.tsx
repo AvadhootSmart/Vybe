@@ -36,32 +36,33 @@ const RoomPlayerPage = ({
   const [user, setUser] = useState<USER | null>(null);
   const [listeners, setListeners] = useState<LISTENER[]>([]);
   const [songQueue, setSongQueue] = useState<YOUTUBE_DATA[]>([
-    {
-      YT_TITLE: "Waiting",
-      YT_VIDEO_ID: "GlvAH57aSpA",
-    },
-    {
-      YT_TITLE: "Sleepless Nights",
-      YT_VIDEO_ID: "iGyrWNa2Ico",
-    },
-    {
-      YT_TITLE: "Your boyfriend's Car",
-      YT_VIDEO_ID: "emK-dkaGokM",
-    },
-    {
-      YT_TITLE: "Faith",
-      YT_VIDEO_ID: "5Dn-_UzLmbM",
-    },
-    {
-      YT_TITLE: "Better Now - Caslow Remix",
-      YT_VIDEO_ID: "nvKklOc3Rtk",
-    },
+    // {
+    //   YT_TITLE: "Waiting",
+    //   YT_VIDEO_ID: "GlvAH57aSpA",
+    // },
+    // {
+    //   YT_TITLE: "Sleepless Nights",
+    //   YT_VIDEO_ID: "iGyrWNa2Ico",
+    // },
+    // {
+    //   YT_TITLE: "Your boyfriend's Car",
+    //   YT_VIDEO_ID: "emK-dkaGokM",
+    // },
+    // {
+    //   YT_TITLE: "Faith",
+    //   YT_VIDEO_ID: "5Dn-_UzLmbM",
+    // },
+    // {
+    //   YT_TITLE: "Better Now - Caslow Remix",
+    //   YT_VIDEO_ID: "nvKklOc3Rtk",
+    // },
   ]);
 
   // Connect WebSocket
   useEffect(() => {
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
     const ws = new WebSocket(
-      `wss://${process.env.NEXT_PUBLIC_BACKEND_HOSTNAME}/ws/${roomID}/${isHost ? "host" : "guest"}`,
+      `${protocol}://${process.env.NEXT_PUBLIC_BACKEND_HOSTNAME}/ws/${roomID}/${isHost ? "host" : "guest"}`,
     );
     wsRef.current = ws;
 
@@ -135,8 +136,8 @@ const RoomPlayerPage = ({
 
         case "addToQueue":
           setSongQueue((prev) => {
-            const vid = data.song?.VideoID;
-            const title = data.song?.Title;
+            const vid = data.song?.VideoID || data.song?.YT_VIDEO_ID;
+            const title = data.song?.Title || data.song?.YT_TITLE;
             if (!vid) return prev;
             const exists = prev.some((s) => s.YT_VIDEO_ID === vid);
             if (exists) return prev;
@@ -148,9 +149,19 @@ const RoomPlayerPage = ({
           setUser(data.user);
           break;
 
-        case "all_users":
-          setListeners(data.users || []);
+        case "all_users": {
+          const uniqueUsers = (data.users || []).reduce(
+            (acc: LISTENER[], user: LISTENER) => {
+              if (!acc.some((u) => u.ID === user.ID)) {
+                acc.push(user);
+              }
+              return acc;
+            },
+            [],
+          );
+          setListeners(uniqueUsers);
           break;
+        }
 
         case "user_joined":
           if (data.user) {
@@ -172,11 +183,11 @@ const RoomPlayerPage = ({
             setListeners((prev) =>
               prev.filter((listener) => listener.ID !== data.user.ID),
             );
+            toast.message(`User ${data.user.Name} left the room`);
           }
           break;
       }
     };
-
     return () => {
       ws.close();
       wsRef.current = null;
@@ -390,25 +401,23 @@ const RoomPlayerPage = ({
           </div>
 
           {/* Main Player Section */}
-          {songQueue.length > 0 && (
-            <div className="fixed bottom-10 left-0 px-4 right-0 z-50">
-              <div className="mx-auto max-w-7xl w-full">
-                <RoomAudioPlayer
-                  ref={audioRef}
-                  isHost={isHost}
-                  currentSong={songQueue[currentSongIdx]}
-                  onPlay={handlePlay}
-                  onPause={handlePause}
-                  onNext={handleNext}
-                  onPrevious={handlePrevious}
-                  onEnded={handleNext}
-                  onSearch={(track) => {
-                    sendEvent("addToQueue", track);
-                  }}
-                />
-              </div>
+          <div className="fixed bottom-10 left-0 px-4 right-0 z-50">
+            <div className="mx-auto max-w-7xl w-full">
+              <RoomAudioPlayer
+                ref={audioRef}
+                isHost={isHost}
+                currentSong={songQueue[currentSongIdx]}
+                onPlay={handlePlay}
+                onPause={handlePause}
+                onNext={handleNext}
+                onPrevious={handlePrevious}
+                onEnded={handleNext}
+                onSearch={(track) => {
+                  sendEvent("addToQueue", track);
+                }}
+              />
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { AnimatePresence, motion as m } from "motion/react";
 
 type RoomDialogProps = {
-  onCreate?: (roomName?: string) => void | Promise<void>;
+  onCreate?: (roomName: string) => void | Promise<void>;
   onJoin?: (roomCode: string) => void | Promise<void>;
   initialMode?: "create" | "join";
   children: React.ReactNode;
