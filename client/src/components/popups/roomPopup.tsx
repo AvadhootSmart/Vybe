@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AnimatePresence, motion as m } from "motion/react";
 
 type RoomDialogProps = {
   onCreate?: (roomName?: string) => void | Promise<void>;
@@ -22,13 +23,6 @@ type RoomDialogProps = {
   children: React.ReactNode;
 };
 
-/**
- * Validation rules:
- * - min length: 4
- * - lowercase only (a-z), digits (0-9) and hyphens (-)
- * - no spaces allowed (we strip spaces on input)
- * - create max 60, join max 12
- */
 const createSchema = z
   .string()
   .min(4, { message: "Room name must be at least 4 characters." })
@@ -57,19 +51,15 @@ export function RoomPopup({
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  // focus input when mode changes
   useEffect(() => {
     if (inputRef.current) {
       inputRef.current.focus();
       inputRef.current.select();
     }
-    // clear errors when toggling mode
     setError(null);
   }, [mode]);
 
-  // normalize input: lowercase and strip spaces
   function handleChange(raw: string) {
-    // convert to lowercase and remove whitespace characters
     const normalized = raw.toLowerCase().replace(/\s+/g, "");
     setValue(normalized);
     setError(null);
@@ -77,7 +67,6 @@ export function RoomPopup({
 
   const trimmed = value.trim();
 
-  // validate using zod
   const createValidation = createSchema.safeParse(trimmed);
   const joinValidation = joinSchema.safeParse(trimmed);
 
@@ -91,7 +80,6 @@ export function RoomPopup({
     e?.preventDefault();
     if (!mode) return;
 
-    // Re-validate before submitting
     const schema = mode === "create" ? createSchema : joinSchema;
     const result = schema.safeParse(trimmed);
 
@@ -104,16 +92,13 @@ export function RoomPopup({
       setIsSubmitting(true);
 
       if (mode === "create") {
-        // Set localStorage flag for room host
         const roomKey = `room_${trimmed}_host`;
         localStorage.setItem(roomKey, "true");
-
         await Promise.resolve(onCreate?.(trimmed));
       } else {
         await Promise.resolve(onJoin?.(trimmed));
       }
 
-      // reset dialog state after success
       setMode(undefined);
       setValue("");
       setError(null);
@@ -133,9 +118,7 @@ export function RoomPopup({
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader className="text-left">
-          <DialogTitle className="text-2xl font-Poppins">
-            Vybe Rooms
-          </DialogTitle>
+          <DialogTitle className="text-2xl font-Poppins">Vybe Rooms</DialogTitle>
           <DialogDescription>
             Create a new room or join an existing one using a room code.
           </DialogDescription>
@@ -166,60 +149,66 @@ export function RoomPopup({
           </Button>
         </div>
 
-        {mode && (
-          <form className="mt-4 space-y-2" onSubmit={handleConfirm}>
-            <div>
-              <Label htmlFor="room-input" className="text-lg mb-1">
-                {mode === "create" ? "Room name" : "Room code"}
-              </Label>
-              <Input
-                id="room-input"
-                ref={inputRef}
-                value={value}
-                onChange={(e) => handleChange(e.target.value)}
-                onKeyDown={onKeyDown}
-                placeholder={
-                  mode === "create" ? "e.g. my-study-session" : "e.g. ab12-34"
-                }
-                aria-invalid={!!error}
-                aria-describedby="room-input-help room-input-error"
-                onPaste={(e) => {
-                  const pasted = //eslint-disable-next-line
-                  (e.clipboardData || (window as any).clipboardData).getData(
-                    "text",
-                  );
-
-                  e.preventDefault();
-                  handleChange(pasted);
-                }}
-              />
-              <p
-                id="room-input-help"
-                className="text-xs text-muted-foreground mt-1"
-              >
-                {mode === "create"
-                  ? "Lowercase, 4–60 chars. Only letters a–z, digits and hyphens (no spaces)."
-                  : "Lowercase, 4–12 chars. Only letters a–z, digits and hyphens (no spaces)."}
-              </p>
-
-              {error && (
-                <p id="room-input-error" className="text-xs text-red-500 mt-1">
-                  {error}
+        {/* Animate form only */}
+        <AnimatePresence mode="wait">
+          {mode && (
+            <m.form
+              key={mode}
+              onSubmit={handleConfirm}
+              className="mt-4 space-y-2"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.25 }}
+            >
+              <div>
+                <Label htmlFor="room-input" className="text-lg mb-1">
+                  {mode === "create" ? "Room name" : "Room code"}
+                </Label>
+                <Input
+                  id="room-input"
+                  ref={inputRef}
+                  value={value}
+                  onChange={(e) => handleChange(e.target.value)}
+                  onKeyDown={onKeyDown}
+                  placeholder={
+                    mode === "create" ? "e.g. my-study-session" : "e.g. ab12-34"
+                  }
+                  aria-invalid={!!error}
+                  aria-describedby="room-input-help room-input-error"
+                  onPaste={(e) => {
+                    const pasted =
+                      (e.clipboardData || (window as any).clipboardData).getData("text");
+                    e.preventDefault();
+                    handleChange(pasted);
+                  }}
+                />
+                <p
+                  id="room-input-help"
+                  className="text-xs text-muted-foreground mt-1"
+                >
+                  {mode === "create"
+                    ? "Lowercase, 4–60 chars. Only letters a–z, digits and hyphens (no spaces)."
+                    : "Lowercase, 4–12 chars. Only letters a–z, digits and hyphens (no spaces)."}
                 </p>
-              )}
-            </div>
-          </form>
-        )}
+                {error && (
+                  <p id="room-input-error" className="text-xs text-red-500 mt-1">
+                    {error}
+                  </p>
+                )}
+              </div>
+            </m.form>
+          )}
+        </AnimatePresence>
 
         <DialogFooter className="flex justify-between mt-6">
-          <div className="flex gap-2">
+          <m.div layout className="flex gap-2">
             <Button
               variant="ghost"
               onClick={() => {
                 setMode(undefined);
                 setValue("");
                 setError(null);
-                // onOpenChange(false);
               }}
               disabled={isSubmitting}
             >
@@ -233,10 +222,10 @@ export function RoomPopup({
               {isSubmitting
                 ? "Working..."
                 : mode === "create"
-                  ? "Confirm & Create"
-                  : "Confirm & Join"}
+                ? "Confirm & Create"
+                : "Confirm & Join"}
             </Button>
-          </div>
+          </m.div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

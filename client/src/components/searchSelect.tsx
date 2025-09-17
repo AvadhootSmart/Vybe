@@ -25,8 +25,8 @@ export const SearchSelect = ({
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>
-          <SelectItem value="yt-api">Youtube API</SelectItem>
           <SelectItem value="yt-search">Basic Search</SelectItem>
+          <SelectItem value="yt-api">Fast Search</SelectItem>
         </SelectGroup>
       </SelectContent>
     </Select>

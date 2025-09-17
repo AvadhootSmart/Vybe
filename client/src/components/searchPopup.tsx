@@ -39,7 +39,7 @@ export const SearchPopup = ({
   const [loading, setLoading] = useState(false); // fix: false by default
   const [searched, setSearched] = useState(false); // track if user has searched at least once
   const [searchType, setSearchType] = useState<"yt-api" | "yt-search">(
-    "yt-api",
+    "yt-search",
   );
 
   useEffect(() => {

@@ -71,7 +71,7 @@ func Transify(c *fiber.Ctx) error {
 
 	wg.Wait()
 
-	log.Printf("Transify completed. Cached %d files: %v", len(cachedFiles), cachedFiles)
+	// log.Printf("Transify completed. Cached %d files: %v", len(cachedFiles), cachedFiles)
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"cached": cachedFiles,
 	})
@@ -88,7 +88,7 @@ func downloadVideo(ctx context.Context, videoId, cacheDir string) string {
 			log.Printf("Cache hit: %s at %s", videoId, cachedPath)
 			return cachedPath
 		}
-		log.Printf("Cache miss: file not found on disk for %s at %s", videoId, cachedPath)
+		// log.Printf("Cache miss: file not found on disk for %s at %s", videoId, cachedPath)
 	} else {
 		log.Printf("Cache miss: no cached path for %s", videoId)
 	}
