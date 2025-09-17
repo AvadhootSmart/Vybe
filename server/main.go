@@ -115,9 +115,8 @@ func main() {
 
 			switch event.Type {
 			case "addToQueue":
-				// only host can modify queue
-				if client.IsHost && event.Song.VideoID != "" {
-					hub.AddSong(roomID, event.Song) //TODO: add complete song struct instead of just id
+				if event.Song.VideoID != "" {
+					hub.AddSong(roomID, event.Song) 
 					hub.Broadcast(roomID, event)
 				}
 
@@ -164,6 +163,7 @@ func main() {
 	app.Post("/search", handlers.SingleSearch)
 	app.Post("/playlist/tracks/search", handlers.PlaylistTracksSearch)
 	app.Post("/youtube/search", handlers.ApiSearch)
+	app.Post("/youtube/basic-search", handlers.BasicApiSearch)
 
 	app.Post("/transify", handlers.Transify)
 	app.Get("/stream/:videoID", handlers.StreamAudio)

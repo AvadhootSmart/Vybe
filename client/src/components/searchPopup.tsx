@@ -47,7 +47,7 @@ export const SearchPopup = ({
     if (token) setGoogleToken(token);
   }, []);
 
-  const handleSearch = async () => {
+  const handleSearch = async (type: "yt-api" | "yt-search") => {
     if (!googleToken) {
       toast.error("Google token not available");
       return;
@@ -58,25 +58,45 @@ export const SearchPopup = ({
     setSearched(true);
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/search`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query }),
-        },
-      );
+      if (type == "yt-search") {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/search`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query }),
+          },
+        );
 
-      const data = await response.json();
-      console.log("Search result", data);
+        const data = await response.json();
+        console.log("Search result", data);
 
-      if (!data || data.length === 0) {
-        toast.error("No YouTube video found for this track");
-        setResults([]);
-        return;
+        if (!data || data.length === 0) {
+          toast.error("No YouTube video found for this track");
+          setResults([]);
+          return;
+        }
+
+        setResults(data);
+      } else if (type == "yt-api") {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/youtube/basic-search`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query }),
+          },
+        );
+
+        const data = await response.json();
+        console.log("Search result", data);
+
+        if (!data || data.length === 0) {
+          toast.error("No YouTube video found for this track");
+          setResults([]);
+          return;
+        }
       }
-
-      setResults(data);
     } catch (error) {
       if (error instanceof Error) {
         toast.error(error.message);
@@ -138,9 +158,12 @@ export const SearchPopup = ({
             className="flex-1"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch(searchType)}
           />
-          <Button onClick={handleSearch} disabled={loading || query === ""}>
+          <Button
+            onClick={() => handleSearch(searchType)}
+            disabled={loading || query === ""}
+          >
             Search
           </Button>
         </div>

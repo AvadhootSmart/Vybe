@@ -11,8 +11,9 @@ const RoomPage = () => {
     if (id) {
       const hostStatus = localStorage.getItem(`room_${id}_host`) === "true";
       setIsHost(hostStatus);
-      console.log(hostStatus)
+      // console.log(hostStatus)
     }
+
   }, [id]);
 
   return (

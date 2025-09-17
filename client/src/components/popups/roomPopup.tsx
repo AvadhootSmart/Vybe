@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { z } from "zod";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +22,29 @@ type RoomDialogProps = {
   children: React.ReactNode;
 };
 
+/**
+ * Validation rules:
+ * - min length: 4
+ * - lowercase only (a-z), digits (0-9) and hyphens (-)
+ * - no spaces allowed (we strip spaces on input)
+ * - create max 60, join max 12
+ */
+const createSchema = z
+  .string()
+  .min(4, { message: "Room name must be at least 4 characters." })
+  .max(60, { message: "Room name can be at most 60 characters." })
+  .regex(/^[a-z0-9-]+$/, {
+    message: "Only lowercase letters, numbers, and hyphens are allowed.",
+  });
+
+const joinSchema = z
+  .string()
+  .min(4, { message: "Room code must be at least 4 characters." })
+  .max(12, { message: "Room code can be at most 12 characters." })
+  .regex(/^[a-z0-9-]+$/, {
+    message: "Only lowercase letters, numbers, and hyphens are allowed.",
+  });
+
 export function RoomPopup({
   onCreate,
   onJoin,
@@ -30,6 +54,7 @@ export function RoomPopup({
   const [mode, setMode] = useState<"create" | "join" | undefined>(initialMode);
   const [value, setValue] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   // focus input when mode changes
@@ -38,21 +63,46 @@ export function RoomPopup({
       inputRef.current.focus();
       inputRef.current.select();
     }
+    // clear errors when toggling mode
+    setError(null);
   }, [mode]);
 
-  // simple validation
+  // normalize input: lowercase and strip spaces
+  function handleChange(raw: string) {
+    // convert to lowercase and remove whitespace characters
+    const normalized = raw.toLowerCase().replace(/\s+/g, "");
+    setValue(normalized);
+    setError(null);
+  }
+
   const trimmed = value.trim();
-  const isValidCreate = trimmed.length >= 1 && trimmed.length <= 60;
-  const isValidJoin = /^[A-Za-z0-9\-]{4,12}$/.test(trimmed);
+
+  // validate using zod
+  const createValidation = createSchema.safeParse(trimmed);
+  const joinValidation = joinSchema.safeParse(trimmed);
+
+  const isValidCreate = createValidation.success;
+  const isValidJoin = joinValidation.success;
+
   const canConfirm =
     mode === "create" ? isValidCreate : mode === "join" ? isValidJoin : false;
 
   async function handleConfirm(e?: React.FormEvent) {
     e?.preventDefault();
-    if (!mode || !canConfirm) return;
+    if (!mode) return;
+
+    // Re-validate before submitting
+    const schema = mode === "create" ? createSchema : joinSchema;
+    const result = schema.safeParse(trimmed);
+
+    if (!result.success) {
+      setError(result.error.issues[0]?.message ?? "Invalid value");
+      return;
+    }
 
     try {
       setIsSubmitting(true);
+
       if (mode === "create") {
         // Set localStorage flag for room host
         const roomKey = `room_${trimmed}_host`;
@@ -62,8 +112,11 @@ export function RoomPopup({
       } else {
         await Promise.resolve(onJoin?.(trimmed));
       }
+
+      // reset dialog state after success
       setMode(undefined);
       setValue("");
+      setError(null);
     } finally {
       setIsSubmitting(false);
     }
@@ -94,6 +147,7 @@ export function RoomPopup({
             onClick={() => {
               setMode((prev) => (prev === "create" ? undefined : "create"));
               setValue("");
+              setError(null);
             }}
             aria-pressed={mode === "create"}
           >
@@ -104,6 +158,7 @@ export function RoomPopup({
             onClick={() => {
               setMode((prev) => (prev === "join" ? undefined : "join"));
               setValue("");
+              setError(null);
             }}
             aria-pressed={mode === "join"}
           >
@@ -121,23 +176,38 @@ export function RoomPopup({
                 id="room-input"
                 ref={inputRef}
                 value={value}
-                onChange={(e) => setValue(e.target.value)}
+                onChange={(e) => handleChange(e.target.value)}
                 onKeyDown={onKeyDown}
                 placeholder={
-                  mode === "create" ? "e.g. My Study Session" : "e.g. AB12-34"
+                  mode === "create" ? "e.g. my-study-session" : "e.g. ab12-34"
                 }
-                aria-invalid={
-                  mode === "create"
-                    ? !isValidCreate && value.length > 0
-                    : !isValidJoin && value.length > 0
-                }
+                aria-invalid={!!error}
+                aria-describedby="room-input-help room-input-error"
+                onPaste={(e) => {
+                  const pasted = //eslint-disable-next-line
+                  (e.clipboardData || (window as any).clipboardData).getData(
+                    "text",
+                  );
+
+                  e.preventDefault();
+                  handleChange(pasted);
+                }}
               />
+              <p
+                id="room-input-help"
+                className="text-xs text-muted-foreground mt-1"
+              >
+                {mode === "create"
+                  ? "Lowercase, 4–60 chars. Only letters a–z, digits and hyphens (no spaces)."
+                  : "Lowercase, 4–12 chars. Only letters a–z, digits and hyphens (no spaces)."}
+              </p>
+
+              {error && (
+                <p id="room-input-error" className="text-xs text-red-500 mt-1">
+                  {error}
+                </p>
+              )}
             </div>
-            <p className="text-xs text-muted-foreground">
-              {mode === "create"
-                ? "Pick a friendly name (1–60 chars)."
-                : "Enter the room code (4–12 characters, letters, numbers, hyphens allowed)."}
-            </p>
           </form>
         )}
 
@@ -148,6 +218,7 @@ export function RoomPopup({
               onClick={() => {
                 setMode(undefined);
                 setValue("");
+                setError(null);
                 // onOpenChange(false);
               }}
               disabled={isSubmitting}

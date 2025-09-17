@@ -207,6 +207,8 @@ const RoomAudioPlayer = forwardRef<HTMLAudioElement, RoomAudioPlayerProps>(
             onValueChange={(val) => {
               const newVolume = val[0];
               setVolume(newVolume);
+              if (ref && typeof ref !== "function" && ref.current) {
+                ref.current.volume = newVolume;               }
             }}
             min={0}
             max={1}
