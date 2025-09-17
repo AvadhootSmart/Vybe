@@ -96,6 +96,7 @@ export const SearchPopup = ({
           setResults([]);
           return;
         }
+        setResults(data);
       }
     } catch (error) {
       if (error instanceof Error) {

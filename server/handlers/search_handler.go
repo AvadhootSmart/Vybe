@@ -148,7 +148,7 @@ func BasicApiSearch(c *fiber.Ctx) error {
 	query := url.QueryEscape(sq.Query)
 
 	reqUrl := fmt.Sprintf(
-		"https://youtube.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=2&q=%skey=%s",
+		"https://youtube.googleapis.com/youtube/v3/search?part=snippet&type=video&maxResults=1&q=%s&key=%s",
 		query, utils.YtApiKey(),
 		)
 
