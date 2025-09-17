@@ -118,7 +118,9 @@ export function RoomPopup({
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent>
         <DialogHeader className="text-left">
-          <DialogTitle className="text-2xl font-Poppins">Vybe Rooms</DialogTitle>
+          <DialogTitle className="text-2xl font-Poppins">
+            Vybe Rooms
+          </DialogTitle>
           <DialogDescription>
             Create a new room or join an existing one using a room code.
           </DialogDescription>
@@ -177,8 +179,10 @@ export function RoomPopup({
                   aria-invalid={!!error}
                   aria-describedby="room-input-help room-input-error"
                   onPaste={(e) => {
-                    const pasted =
-                      (e.clipboardData || (window as any).clipboardData).getData("text");
+                    const pasted = //eslint-disable-next-line
+                    (e.clipboardData || (window as any).clipboardData).getData(
+                      "text",
+                    );
                     e.preventDefault();
                     handleChange(pasted);
                   }}
@@ -192,7 +196,10 @@ export function RoomPopup({
                     : "Lowercase, 4–12 chars. Only letters a–z, digits and hyphens (no spaces)."}
                 </p>
                 {error && (
-                  <p id="room-input-error" className="text-xs text-red-500 mt-1">
+                  <p
+                    id="room-input-error"
+                    className="text-xs text-red-500 mt-1"
+                  >
                     {error}
                   </p>
                 )}
@@ -222,8 +229,8 @@ export function RoomPopup({
               {isSubmitting
                 ? "Working..."
                 : mode === "create"
-                ? "Confirm & Create"
-                : "Confirm & Join"}
+                  ? "Confirm & Create"
+                  : "Confirm & Join"}
             </Button>
           </m.div>
         </DialogFooter>
