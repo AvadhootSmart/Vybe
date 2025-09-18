@@ -16,6 +16,19 @@ export const metadata: Metadata = {
     "Vybe, music, songs, playlists, youtube-music, spotify, ad-free music",
   authors: [{ name: "Avadhoot Smart", url: "https://vybe.avadhootsmart.xyz" }],
   metadataBase: new URL("https://vybe.avadhootsmart.xyz"),
+  openGraph: {
+    title: "Vybe",
+    description: "Vybe To your Music",
+    type: "website",
+    siteName: "Vybe",
+    url: "https://vybe.avadhootsmart.xyz",
+  },
+  twitter: {
+    title: "Vybe",
+    description: "Vybe To your Music",
+    card: "summary_large_image",
+    site: "@magnetic_av",
+  },
 };
 
 
