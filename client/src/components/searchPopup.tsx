@@ -69,7 +69,7 @@ export const SearchPopup = ({
         );
 
         const data = await response.json();
-        console.log("Search result", data);
+        // console.log("Search result", data);
 
         if (!data || data.length === 0) {
           toast.error("No YouTube video found for this track");
@@ -89,7 +89,7 @@ export const SearchPopup = ({
         );
 
         const data = await response.json();
-        console.log("Search result", data);
+        // console.log("Search result", data);
 
         if (!data || data.length === 0) {
           toast.error("No YouTube video found for this track");
@@ -223,7 +223,7 @@ const ResultsCard = ({
   return (
     <div className="flex items-center gap-2">
       <img
-        src="/apple-touch-icon.png"
+        src={item.YT_IMAGE || "/apple-touch-icon.png"}
         alt={item.YT_TITLE}
         className="w-12 h-12 sm:w-20 sm:h-20 object-cover rounded-lg"
       />

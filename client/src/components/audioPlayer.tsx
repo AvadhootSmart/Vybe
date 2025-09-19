@@ -195,7 +195,7 @@ const AudioPlayer = ({
         onEnded={playNext}
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
-        onLoadedData={() => setIsLoaded(true)} // 🔑 replaced oncanplaythrough
+        onLoadedData={() => setIsLoaded(true)} 
         onError={() => {
           setIsLoaded(false);
           toast.error("Error loading audio");

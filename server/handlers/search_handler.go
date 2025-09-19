@@ -215,5 +215,16 @@ func SingleSearch(c *fiber.Ctx) error {
     }
 
     log.Printf("Response count: %d", len(response))
-    return c.JSON(response)
+	formattedYTResponse := make([]fiber.Map, len(response))
+	for i, item := range response{
+		formattedYTResponse[i] = fiber.Map{
+			"YT_VIDEO_ID": item.VideoID,
+			"YT_TITLE":    item.Title,
+			"YT_ARTISTS":   item.Artist,
+			"YT_IMAGE":     item.Image,
+		}
+	}
+
+    // return c.JSON(response)
+	return c.JSON(formattedYTResponse)
 }

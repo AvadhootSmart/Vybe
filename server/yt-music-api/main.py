@@ -14,12 +14,13 @@ def search_song(query, limit=1):
 
     output = []
     for result in results:
+        thumbnails = result.get("thumbnails", [])
         output.append({
             "title": result["title"],
             "artists": [artist["name"] for artist in result.get("artists", [])],
             "videoId": result["videoId"],
             "duration": result["duration"],
-            "images": result["thumbnails"]
+            "image" : thumbnails[1]["url"] if len(thumbnails) > 1 else (thumbnails[0]["url"] if thumbnails else None)
         })
 
     print(json.dumps(output, ensure_ascii=False, indent=2))

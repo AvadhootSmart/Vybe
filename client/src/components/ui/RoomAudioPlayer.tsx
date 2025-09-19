@@ -107,7 +107,7 @@ const RoomAudioPlayer = forwardRef<HTMLAudioElement, RoomAudioPlayerProps>(
           )}
         >
           <img
-            src="/apple-touch-icon.png"
+            src={currentSong?.YT_IMAGE || "/apple-touch-icon.png"}
             alt="album-img"
             className={cn(
               "size-20 rounded-lg",
@@ -124,7 +124,9 @@ const RoomAudioPlayer = forwardRef<HTMLAudioElement, RoomAudioPlayerProps>(
             >
               {currentSong?.YT_TITLE || "Add a song"}
             </m.h1>
-            <span className="text-neutral-400 text-xs">Vybe</span>
+            <span className="text-neutral-400 text-xs">
+              {currentSong?.YT_ARTISTS?.slice(0, 3).join(", ")}
+            </span>
           </div>
         </div>
 

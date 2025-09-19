@@ -117,7 +117,8 @@ export async function transifyPlaylist(
         return updatedTrack || track;
       });
     } else if (type === "yt-search") {
-      const fetchedData = await Promise.all(
+      // const fetchedData = await Promise.all(
+      await Promise.all(
         tracksNeedingUpdate.map(async (track) => {
           const query = `${track.S_NAME} ${track.S_ARTISTS[0].name}`;
           const response = await getPlaylistYTData(query);
@@ -127,9 +128,8 @@ export async function transifyPlaylist(
       );
 
       updatedTracks = playlistTracks.map((track) => {
-        const idx = tracksNeedingUpdate.findIndex(
-          (t) => t.S_NAME === track.S_NAME,
-        );
+        // const idx = tracksNeedingUpdate.findIndex(
+        tracksNeedingUpdate.findIndex((t) => t.S_NAME === track.S_NAME);
         return track;
       });
     }

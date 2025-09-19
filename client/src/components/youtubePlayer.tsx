@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { motion as m } from "motion/react";
 import { YOUTUBE_DATA } from "@/types/youtubeData";
 import { SearchPopup } from "./searchPopup";
+import { Slider } from "./ui/slider";
 
 interface YoutubePlayerProps {
   track?: YOUTUBE_DATA;
@@ -65,13 +66,13 @@ const YoutubePlayer = ({
     }
   };
 
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newVolume = parseFloat(e.target.value);
-    if (audioRef.current) {
-      audioRef.current.volume = newVolume;
-    }
-    setVolume(newVolume);
-  };
+  // const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const newVolume = parseFloat(e.target.value);
+  //   if (audioRef.current) {
+  //     audioRef.current.volume = newVolume;
+  //   }
+  //   setVolume(newVolume);
+  // };
 
   const toggleMute = () => {
     if (audioRef.current) {
@@ -120,7 +121,7 @@ const YoutubePlayer = ({
       {/* Track Info */}
       <div className="hidden gap-2 sm:flex">
         <img
-          src="/apple-touch-icon.png"
+          src={track?.YT_IMAGE || "/apple-touch-icon.png"}
           alt="album-img"
           className="size-20 rounded-lg"
         />
@@ -134,7 +135,9 @@ const YoutubePlayer = ({
           >
             {track?.YT_TITLE || "Unknown Video"}
           </m.h1>
-          <span className="text-neutral-400 text-xs">YouTube</span>
+          <span className="text-neutral-400 text-xs">
+            {track?.YT_ARTISTS?.slice(0, 2).join(", ")}
+          </span>
         </div>
       </div>
 
@@ -191,14 +194,32 @@ const YoutubePlayer = ({
             <LucideVolumeX className="w-4 h-4" />
           )}
         </Button>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.01"
-          value={volume}
-          onChange={handleVolumeChange}
-          className="w-20 cursor-pointer"
+        {/* <input */}
+        {/*   type="range" */}
+        {/*   min="0" */}
+        {/*   max="1" */}
+        {/*   step="0.01" */}
+        {/*   value={volume} */}
+        {/*   onChange={handleVolumeChange} */}
+        {/*   className="w-20 cursor-pointer" */}
+        {/* /> */}
+        <Slider
+          value={[volume]}
+          onValueChange={(val) => {
+            const newVolume = val[0];
+            setVolume(newVolume);
+            if (
+              audioRef &&
+              typeof audioRef !== "function" &&
+              audioRef.current
+            ) {
+              audioRef.current.volume = newVolume;
+            }
+          }}
+          min={0}
+          max={1}
+          step={0.01}
+          className="w-24" // adjust width as you like
         />
       </div>
     </div>

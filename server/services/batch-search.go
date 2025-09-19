@@ -24,7 +24,7 @@ func releaseSlot() {
 type YTSong struct {
 	Title string `json:"title"`
 	Artist []string `json:"artists"`
-	ID string `json:"videoId"`
+	VideoID string `json:"videoId"`
 	Duration string `json:"duration"`
 	Image string `json:"image"`
 }

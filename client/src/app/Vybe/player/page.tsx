@@ -41,8 +41,8 @@ const ExplorePage = () => {
       <div className="max-w-6xl mx-auto min-h-screen flex flex-col gap-10 items-center font-Poppins bg-neutral-950 text-white py-10 px-4 overflow-hidden relative">
         <div className="w-full flex flex-col gap-20">
           <Image
-            src="/apple-touch-icon.png"
-            alt=""
+            src={"/apple-touch-icon.png"}
+            alt="cover-img"
             className="w-[200px] object-cover self-center rounded-xl"
             width={1200}
             height={675}
@@ -59,19 +59,24 @@ const ExplorePage = () => {
                     key={song.YT_VIDEO_ID + idx}
                     onClick={() => setCurrentIdx(idx)}
                     className={cn(
-                      "w-full text-left flex items-center gap-3 p-2 rounded-lg transition-colors",
-                      idx === currentIdx ? "bg-neutral-700/70" : "hover:bg-neutral-800/70"
+                      "w-full text-left flex gap-3 p-2 rounded-lg transition-colors group/track",
+                      idx === currentIdx
+                        ? "bg-neutral-700/70"
+                        : "hover:bg-neutral-800/70",
                     )}
                   >
                     <img
-                      src="/apple-touch-icon.png"
+                      src={song.YT_IMAGE || "/apple-touch-icon.png"}
                       alt="cover-img"
-                      className="size-12 rounded-md"
+                      className="size-12 sm:size-20 rounded-md"
                     />
-                    <div className="flex-1">
-                      <p className="text-white text-sm font-medium line-clamp-1">
+                    <div className="group-hover/track:translate-x-2 transition-all ease-out">
+                      <h1 className="sm:text-xl text-sm">
                         {song.YT_TITLE}
-                      </p>
+                      </h1>
+                      <h2 className="sm:text-lg text-xs text-zinc-400">
+                        {song.YT_ARTISTS?.slice(0, 3).join(", ") || "Artist name"}
+                      </h2>
                     </div>
                   </button>
                 ))
@@ -86,7 +91,7 @@ const ExplorePage = () => {
                       setQueue((prev) =>
                         prev.find((t) => t.YT_VIDEO_ID === track.YT_VIDEO_ID)
                           ? prev
-                          : [...prev, track]
+                          : [...prev, track],
                       )
                     }
                   >
@@ -104,13 +109,20 @@ const ExplorePage = () => {
           <div className="fixed z-50 bottom-8 w-[90%] lg:w-[80%] ">
             <YoutubePlayer
               track={queue[currentIdx]}
-              onPrev={queue.length > 1 ? () => setCurrentIdx((i) => (i - 1 + queue.length) % queue.length) : undefined}
+              onPrev={
+                queue.length > 1
+                  ? () =>
+                      setCurrentIdx(
+                        (i) => (i - 1 + queue.length) % queue.length,
+                      )
+                  : undefined
+              }
               onNext={() => setCurrentIdx((i) => (i + 1) % queue.length)}
               onSelectTrack={(item) => {
                 setQueue((prev) =>
                   prev.find((t) => t.YT_VIDEO_ID === item.YT_VIDEO_ID)
                     ? prev
-                    : [...prev, item]
+                    : [...prev, item],
                 );
                 if (queue.length === 0) setCurrentIdx(0);
               }}
@@ -118,7 +130,7 @@ const ExplorePage = () => {
           </div>
         )}
       </div>
-    </div >
+    </div>
   );
 };
 
