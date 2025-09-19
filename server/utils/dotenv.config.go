@@ -15,3 +15,6 @@ func SpotifyClientID() string {
 func SpotifyClientSecret() string {
 	return os.Getenv("SPOTIFY_CLIENT_SECRET")
 }
+
+func YtMusicPath() string { return os.Getenv("YT_MUSIC_PATH") }
+func PythonPath() string  { return os.Getenv("PYTHON_PATH") }

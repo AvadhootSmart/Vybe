@@ -163,7 +163,7 @@ func main() {
 	app.Get("/spotify/public/playlist/:PID", handlers.GetPlaylistTracksPublic)
 
 	app.Post("/search", handlers.SingleSearch)
-	app.Post("/playlist/tracks/search", handlers.PlaylistTracksSearch)
+	// app.Post("/playlist/tracks/search", handlers.PlaylistTracksSearch)
 	app.Post("/youtube/search", handlers.ApiSearch)
 	app.Post("/youtube/basic-search", handlers.BasicApiSearch)
 

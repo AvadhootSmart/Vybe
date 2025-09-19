@@ -52,16 +52,16 @@ export async function getYoutubeVideoId(
 }
 
 export async function getPlaylistYTData(
-  tracks: string[],
+  query: string,
 ): Promise<{ data: YOUTUBE_DATA[] } | undefined> {
   const response = await fetch(
-    `${process.env.NEXT_PUBLIC_BACKEND_URL}/playlist/tracks/search`,
+    `${process.env.NEXT_PUBLIC_BACKEND_URL}/search`,
     {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ tracks }),
+      body: JSON.stringify({ query }),
     },
   );
   const data = await response.json();
@@ -117,21 +117,19 @@ export async function transifyPlaylist(
         return updatedTrack || track;
       });
     } else if (type === "yt-search") {
-      // Batch search method
-      const payload = tracksNeedingUpdate.map(
-        (track) => `${track.S_NAME}, ${track.S_ARTISTS[0].name}`,
+      const fetchedData = await Promise.all(
+        tracksNeedingUpdate.map(async (track) => {
+          const query = `${track.S_NAME} ${track.S_ARTISTS[0].name}`;
+          const response = await getPlaylistYTData(query);
+          console.log("yt-api-cli", response);
+          return { ...track, YT_DATA: response?.data };
+        }),
       );
-
-      const response = await getPlaylistYTData(payload);
-      const ytDataArray = response?.data;
 
       updatedTracks = playlistTracks.map((track) => {
         const idx = tracksNeedingUpdate.findIndex(
           (t) => t.S_NAME === track.S_NAME,
         );
-        if (idx !== -1 && ytDataArray) {
-          return { ...track, YT_DATA: ytDataArray[idx] };
-        }
         return track;
       });
     }
