@@ -152,7 +152,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-var downloadLimit = make(chan struct{}, 5)
+var downloadLimit = make(chan struct{}, 2)
 
 func acquireSlot() { downloadLimit <- struct{}{} }
 func releaseSlot() { <-downloadLimit }
