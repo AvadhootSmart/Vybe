@@ -49,7 +49,7 @@ const PlaylistPage = () => {
           // Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({ videoIds: firstFewTrackIds }),
-      }
+      },
     );
 
     if (initialResponse.ok) {
@@ -80,15 +80,15 @@ const PlaylistPage = () => {
     if (currPlaylist.length > 0) {
       setCurrentPlaylist(currPlaylist[0]);
       setPlaylistTracks(currPlaylist[0].S_TRACKS || []);
-      console.log(currPlaylist[0].S_TRACKS);
+      // console.log(currPlaylist[0].S_TRACKS);
       if (
         currPlaylist[0].S_TRACKS.length > 0 &&
         currPlaylist[0].S_TRACKS[0].YT_DATA
       ) {
         setTrackIds(
           currPlaylist[0].S_TRACKS.map(
-            (track: TRACK) => track.YT_DATA.YT_VIDEO_ID
-          )
+            (track: TRACK) => track.YT_DATA.YT_VIDEO_ID,
+          ),
         );
       } else {
         setTrackIds([]);
@@ -120,6 +120,7 @@ const PlaylistPage = () => {
           TrackIdx={playingIdx}
           playlistTracks={playlistTracks}
           VideoIds={trackIds}
+          cbSetPlayingIdx={setPlayingIdx}
         />
       </div>
       <div className="fixed top-4 left-4 lg:top-10 lg:left-10">
@@ -154,6 +155,7 @@ const PlaylistPage = () => {
         {playlistTracks.map((track: TRACK, idx: number) => (
           <m.div
             key={track.S_TID}
+            layoutId="track-card"
             // initial={{ opacity: 0, filter: "blur(10px)", y: 10 }}
             // whileInView={{ opacity: 1, filter: "blur(0px)", y: 0 }}
             // transition={{ duration: 0.3, delay: idx * 0.1 }}
@@ -163,8 +165,9 @@ const PlaylistPage = () => {
             className={cn({
               "cursor-pointer": isTrackAvailable(track.YT_DATA.YT_VIDEO_ID),
               "opacity-30 pointer-events-none": !isTrackAvailable(
-                track.YT_DATA.YT_VIDEO_ID
+                track.YT_DATA.YT_VIDEO_ID,
               ),
+              "bg-neutral-800 rounded-lg": playingIdx === idx,
             })}
           >
             <TrackCard track={track} />

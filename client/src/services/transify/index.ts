@@ -3,6 +3,7 @@ import { YOUTUBE_DATA } from "@/types/youtubeData";
 // import router from "next/dist/client/router";
 import { toast } from "sonner";
 
+//search via youtube data api
 export async function getYoutubeVideoId(
   trackName: string,
   artistName: string,
@@ -51,9 +52,10 @@ export async function getYoutubeVideoId(
   }
 }
 
+//search via yt-music-api custom cli
 export async function getPlaylistYTData(
   query: string,
-): Promise<{ data: YOUTUBE_DATA[] } | undefined> {
+): Promise<YOUTUBE_DATA[] | undefined> {
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_BACKEND_URL}/search`,
     {
@@ -101,7 +103,6 @@ export async function transifyPlaylist(
     let updatedTracks: typeof playlistTracks = [];
 
     if (type === "yt-api") {
-      // One-by-one fetch using YouTube API
       const fetchedData = await Promise.all(
         tracksNeedingUpdate.map(async (track) => {
           const videoData = await getYoutubeVideoId(
@@ -117,20 +118,25 @@ export async function transifyPlaylist(
         return updatedTrack || track;
       });
     } else if (type === "yt-search") {
-      // const fetchedData = await Promise.all(
-      await Promise.all(
+      const fetchedData = await Promise.all(
         tracksNeedingUpdate.map(async (track) => {
-          const query = `${track.S_NAME} ${track.S_ARTISTS[0].name}`;
-          const response = await getPlaylistYTData(query);
-          console.log("yt-api-cli", response);
-          return { ...track, YT_DATA: response?.data };
+          const query = `${track.S_NAME} - ${track.S_ARTISTS[0].name}`;
+          const tracks = await getPlaylistYTData(query);
+          if (tracks) {
+            return {
+              ...track,
+              YT_DATA: {
+                YT_TITLE: tracks[0].YT_TITLE!,
+                YT_VIDEO_ID: tracks[0].YT_VIDEO_ID!,
+              },
+            };
+          }
         }),
       );
 
       updatedTracks = playlistTracks.map((track) => {
-        // const idx = tracksNeedingUpdate.findIndex(
-        tracksNeedingUpdate.findIndex((t) => t.S_NAME === track.S_NAME);
-        return track;
+        const updatedTrack = fetchedData.find((t) => t?.S_NAME === track.S_NAME);
+        return updatedTrack || track;
       });
     }
 

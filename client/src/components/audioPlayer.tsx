@@ -18,12 +18,14 @@ interface AudioPlayerProps {
   VideoIds: string[];
   playlistTracks: TRACK[];
   TrackIdx: number;
+  cbSetPlayingIdx: (idx: number) => void;
 }
 
 const AudioPlayer = ({
   VideoIds,
   playlistTracks,
   TrackIdx,
+  cbSetPlayingIdx,
 }: AudioPlayerProps) => {
   const [playing, setPlaying] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -76,12 +78,14 @@ const AudioPlayer = ({
   const playNext = () => {
     const nextIdx = getNextIndex();
     setPlayingIdx(nextIdx);
+    cbSetPlayingIdx(nextIdx);
     fetchAudio(VideoIds[nextIdx]);
   };
 
   const playPrev = () => {
     const prevIdx = (playingIdx - 1 + VideoIds.length) % VideoIds.length;
     setPlayingIdx(prevIdx);
+    cbSetPlayingIdx(prevIdx);
     fetchAudio(VideoIds[prevIdx]);
   };
 
@@ -104,6 +108,7 @@ const AudioPlayer = ({
 
   useEffect(() => {
     setPlayingIdx(TrackIdx);
+    cbSetPlayingIdx(TrackIdx);
     fetchAudio(VideoIds[TrackIdx]);
   }, [VideoIds, TrackIdx]);
 
@@ -195,7 +200,7 @@ const AudioPlayer = ({
         onEnded={playNext}
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
-        onLoadedData={() => setIsLoaded(true)} 
+        onLoadedData={() => setIsLoaded(true)}
         onError={() => {
           setIsLoaded(false);
           toast.error("Error loading audio");

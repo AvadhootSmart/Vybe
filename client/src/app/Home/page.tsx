@@ -31,6 +31,7 @@ function Home() {
     }
   }, []);
 
+  //fetches spotify playlists
   const fetchPlaylists = async () => {
     const { storePlaylists, Playlists } = usePlaylistStore.getState();
 
@@ -61,6 +62,7 @@ function Home() {
     }
   };
 
+  //fetches tracks for a playlist by playlist id
   const getPlaylistItemsByPID = async (PID: string) => {
     try {
       if (!spotifyAccessToken) {
