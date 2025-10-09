@@ -53,7 +53,7 @@ export default function HomePage() {
                 size="lg"
                 className="w-full bg-vybe text-black hover:bg-vybe/90 transition text-lg font-medium"
               >
-                🎧 Start Vybing
+                Start Vybing
               </Button>
             </Link>
 
@@ -66,7 +66,7 @@ export default function HomePage() {
                 variant="secondary"
                 className="w-full dark bg-white/10 hover:bg-white/20 transition text-lg font-medium"
               >
-                👯 Vybe with Friends
+                Vybe with Friends
               </Button>
             </RoomPopup>
           </div>
