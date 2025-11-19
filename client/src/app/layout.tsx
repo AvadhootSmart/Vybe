@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "sonner";
 import { Poppins } from "next/font/google";
-import { Banner } from "@/components/banner";
 
 const poppins = Poppins({
   subsets: ["latin"], // only load needed characters
@@ -62,7 +61,6 @@ export default function RootLayout({
         />
       </head>
       <body className={`antialiased ${poppins.variable}`}>
-        <Banner />
         <main>{children}</main>
         <Toaster richColors position="top-right" />
       </body>
